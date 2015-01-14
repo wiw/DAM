@@ -1,0 +1,6 @@
+SPECIES=fly
+FASTQ_FILES='/scratch/run249/*.fastq.gz'
+ASSEMBLY=dm3
+GATC_FRAGMENTS=/home/ludo/projects/LP130116_DamID-seq-fly-pipeline/data/LP130118_pipeline_data/DmelGATCfragments-r5_IRangesList_LP111103.RData
+#OUTPUT_DIR=/data/ludo/DamID-seq/run249/run_LP130613
+OUTPUT_DIR=/scratch/run249_proc/run_LP130613

@@ -1,0 +1,4 @@
+SPECIES=fly
+FASTQ_FILES='/home/anton/Doc/Documents/SequenceData/DamID_IBprot/export_not_combine/141110/*.fastq.gz'
+ASSEMBLY=dm3
+OUTPUT_DIR=/home/anton/Doc/Documents/SequenceData/DamID_IBprot/output_not_combine/141110

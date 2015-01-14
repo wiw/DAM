@@ -1,0 +1,4 @@
+SPECIES=fly
+FASTQ_FILES='/home/anton/data/debug/*.fastq.gz'
+ASSEMBLY=dm3
+OUTPUT_DIR=/home/anton/data/output_debug
