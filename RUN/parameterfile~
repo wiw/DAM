@@ -1,4 +1,0 @@
-SPECIES=fly
-FASTQ_FILES='/home/anton/backup/shev/*.fastq.gz'
-ASSEMBLY=dm3
-OUTPUT_DIR=/home/anton/backup/shev/out
