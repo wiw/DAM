@@ -49,7 +49,7 @@ usage ()
 }
 
 # set code base
-CODEDIR='/home/anton/data/DAM/RUN'
+CODEDIR='~/data/DAM/RUN'
 ALIGN_SCRIPT="${CODEDIR}/align_local_fq.sh"
 READS2GATC_SCRIPT="${CODEDIR}/reads2GATC.sh"
 

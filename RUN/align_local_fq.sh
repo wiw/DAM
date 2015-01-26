@@ -41,7 +41,7 @@ fi
 BOWTIE2=bowtie2
 CUTADAPT=cutadapt
 FASTX_REVCOM=fastx_reverse_complement
-BOWTIE2_INDEXES=/home/anton/data/DAM/indexes/
+BOWTIE2_INDEXES=~/data/DAM/indexes/
 
 # echo some versioninfo to log:
 echo 'using bowtie2 version:'
