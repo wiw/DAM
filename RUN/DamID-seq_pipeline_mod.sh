@@ -258,7 +258,6 @@ fi
 done
 cd ${ORG_DIR}
 mv -f ${TMP_DIR} ${OUTPUT_DIR}/gatcReadCounts/$fq_base
-rm -R ${TMP_DIR}
 if [ $? -ne 0 ]; then
 echo "cannot move temp output dir to ${OUTPUT_DIR}/gatcReadCounts/$fq_base, aborting" 1>&2
 exit 1
@@ -295,4 +294,4 @@ echo ""
 #/usr/local/src/R-2.14.1-build_LP120202/bin/Rscript -e "library(bioinfR); parfile <- '$PARFILE'; runSweave('$1', driver='knit')"
 
 # instead of runSweave use knit() directly plus some form of texi2pdf
-
+rm -R ${T_DIR}

@@ -432,7 +432,7 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </div>
 <div class=\"span4\" style=\"color: #f10026\">
 <h4 align=\"center\"><script>document.write(number_format(${s4_interim_trash_reads}, 0, '.', ' '))</script> trash reads (${s4_interim_trash_reads_pct})</h4>
-<p align=\"center\"><ul><li>too short after removal of adapters</li><li>no GATC(s) after removal of adapters</li><li>contain inner GATS(s)</li></ul></p>
+<p align=\"center\"><ul><li>too short after removal of adapters</li><li>no GATC(s) after removal of adapters</li><li>contain inner GATC(s)</li></ul></p>
 </div>
 </div>
 <p>&nbsp;</p>
@@ -448,7 +448,7 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </div>
 <div class=\"span4\" style=\"color: #f10026\">
 <h4 align=\"center\"><script>document.write(number_format(${s5_trash_reads}, 0, '.', ' '))</script> trash reads (${s5_trash_reads_pct})</h4>
-<p align=\"center\"><ul><li>too short after removal of adapters</li><li>no GATC(s) after removal of adapters</li><li>contain inner GATS(s)</li></ul></p>
+<p align=\"center\"><ul><li>too short after removal of adapters</li><li>no GATC(s) after removal of adapters</li><li>contain inner GATC(s)</li></ul></p>
 </div>
 </div>
 
@@ -459,7 +459,7 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </html>" > $basef/${fq_human}_report.html
 
 # remove intermediate files
-rm -R $len9 $olen $stats $len9/* $olen/* $stats/* $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
+rm -R $len9 $olen $stats $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
 #mv $basef $OUT # If folder $OUT is defined then to move output data from $DIR to $OUT
 
 ###############################################################################
@@ -518,9 +518,7 @@ echo '5'
 ## TODO
 # still need to do something with OUT2.sam and OUT3.sam 
 
-cat ${TMP_FQ_EDGE} | \
-(${BOWTIE2} ${BOWTIE_PAR} -U - | \
-samtools view -bS - -o ${TMP_BAM_EDGE} ) 2> ${TMP_STATS_EDGE}
+cat ${TMP_FQ_EDGE} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM_EDGE} ) 2> ${TMP_STATS_EDGE}
 CheckExit $? "bowtie2 failed on edge reads"
 echo '11'
 # extract all unmapped reads, collect read sequences, and read count.
