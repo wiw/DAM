@@ -1,4 +1,4 @@
 SPECIES=fly
-FASTQ_FILES='/home/anton/backup/input/1719_BR-M-DAM-1_R1_001.fastq.gz'
+FASTQ_FILES='/home/anton/backup/2input/*.fastq.gz'
 ASSEMBLY=dm3
-OUTPUT_DIR=/home/anton/backup/output
+OUTPUT_DIR=/home/anton/backup/2output

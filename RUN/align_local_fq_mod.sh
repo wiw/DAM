@@ -298,7 +298,7 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 
 # Remove reads with inner GATC's
 	pre=`head -n 1 $basef/interim_gatcs_${fq_base}.fastq | cut -c 1-2`
-	sed -r "s/.+(GATC)+.+/empty sequence/" $basef/interim_gatcs_${fq_base}.fastq | sed "/^$pre/ {N; /empty sequence/ { N; /\n+$/ { N; d } } }" > ${TMP_FQ_EDGE}
+	sed -r "s/^((?!@).).+(GATC)+.+$/empty sequences/" $basef/interim_gatcs_${fq_base}.fastq | sed "/^$pre/ {N; /empty sequence/ { N; /\n+$/ { N; d } } }" > ${TMP_FQ_EDGE}
 
 #############################
 ###  Variable for report  ###
@@ -457,7 +457,7 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </div>
 </body>
 </html>" > $basef/${fq_human}_report.html
-
+exit 1
 # remove intermediate files
 rm -R $len9 $olen $stats $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
 #mv $basef $OUT # If folder $OUT is defined then to move output data from $DIR to $OUT
