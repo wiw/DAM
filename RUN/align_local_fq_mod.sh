@@ -457,7 +457,6 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </div>
 </body>
 </html>" > $basef/${fq_human}_report.html
-exit 1
 # remove intermediate files
 rm -R $len9 $olen $stats $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
 #mv $basef $OUT # If folder $OUT is defined then to move output data from $DIR to $OUT

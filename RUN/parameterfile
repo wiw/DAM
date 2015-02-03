@@ -1,4 +1,4 @@
 SPECIES=fly
-FASTQ_FILES='/home/anton/backup/2input/*.fastq.gz'
+FASTQ_FILES='/home/anton/backup/input/*.fastq.gz'
 ASSEMBLY=dm3
-OUTPUT_DIR=/home/anton/backup/2output
+OUTPUT_DIR=/home/anton/backup/output
