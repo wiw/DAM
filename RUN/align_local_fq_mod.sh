@@ -107,6 +107,8 @@ count=5 # some variables corresponds to the length of the adapter with a fragmen
 	esac
 
 # set additional output files based on base filename
+	OUT_BAM_INNER=${OUT_BAM%_local.bam}_inner_local.bam
+	OUT_BAM_EDGE=${OUT_BAM%_local.bam}_edge_local.bam
 	OUTx2_BAM=${OUT_BAM%_local.bam}_local_2x.bam
 	OUTx3_BAM=${OUT_BAM%_local.bam}_local_3x.bam
 	BWT_STATS=${OUT_BAM%_local.bam}_local.bowtie_stats
@@ -182,12 +184,12 @@ END {
 '
 
 # check whether outfiles exists already
-if [ -f "${OUT_BAM}" -a -f "${BWT_STATS}" -a -f "${BAM_OUT}".bai ]; then
+if [ -f "${OUT_BAM_INNER}" -a -f "${OUT_BAM_EDGE}" -a -f "${BWT_STATS}" -a -f "${BAM_OUT}".bai ]; then
 echo "${IN_FQ} is aligned already, exiting" 1>&2
 exit 0
 else
 # remove if only some exist
-rm -f "${OUT_BAM}" "${BWT_STATS}" "${BAM_OUT}".bai
+rm -f "${OUT_BAM_INNER}" "${OUT_BAM_EDGE}" "${BWT_STATS}" "${BAM_OUT}".bai
 fi
 
 ##################################################################################
@@ -298,7 +300,7 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 
 # Remove reads with inner GATC's
 	pre=`head -n 1 $basef/interim_gatcs_${fq_base}.fastq | cut -c 1-2`
-	sed -r "s/^((?!@).).+(GATC)+.+$/empty sequences/" $basef/interim_gatcs_${fq_base}.fastq | sed "/^$pre/ {N; /empty sequence/ { N; /\n+$/ { N; d } } }" > ${TMP_FQ_EDGE}
+	cat $basef/interim_gatcs_${fq_base}.fastq | perl -e 'while($h=<>){$s=<>;$t=<>.<>; if($s!~/.+GATC.+/){print $h.$s.$t}}' > ${TMP_FQ_EDGE}
 
 #############################
 ###  Variable for report  ###
@@ -564,8 +566,8 @@ samtools view ${TMP_BAM_EDGE} | \
 			 cat ${TMP_STATS_INNER} ${TMP_STATS_EDGE} > ${BWT_STATS}
 			 OUT=$?
 			 if [ ${OUT} -ne 0 ]; then
-			 rm -f ${OUT_BAM}
-			 rm -f ${OUT_BAM}.bai
+			 rm -f ${OUT_BAM_INNER} ${OUT_BAM_EDGE}
+			 rm -f ${OUT_BAM_EDGE}.bai ${OUT_BAM_EDGE}.bai
 			 CheckExit ${OUT} "merging stat files failed"
 			 fi
 # delete tmp stats files
@@ -667,22 +669,29 @@ samtools view ${TMP_BAM_EDGE} | \
 			 echo "# mito reads from 3xmapped reads: ${CNT_3X_MITO=}" >> ${BWT_STATS}
 			 echo '19'
 
+mv ${TMP_BAM_INNER} ${OUT_BAM_INNER}
+mv ${TMP_BAM_EDGE} ${OUT_BAM_EDGE}
+
 # merge temp files to final filenames
 # mv ${TMP_BAM} ${OUT_BAM}
-			 samtools merge ${OUT_BAM} ${TMP_BAM_INNER} ${TMP_BAM_EDGE}
-			 CheckExit $? "merging bam files failed"
-# delete tmp bamm files
-			 rm -f ${TMP_BAM_INNER} ${TMP_BAM_EDGE}
+#			 samtools merge ${OUT_BAM} ${TMP_BAM_INNER} ${TMP_BAM_EDGE}
+#			 CheckExit $? "merging bam files failed"
+# delete tmp bam files
+#		 rm -f ${TMP_BAM_INNER} ${TMP_BAM_EDGE}
 # index merged bam file
-			 samtools index ${OUT_BAM}
+			 samtools index ${OUT_BAM_INNER}
 			 OUT=$?
 			 if [ ${OUT} -ne 0 ]; then
-			 rm -f ${OUT_BAM}
+			 rm -f ${OUT_BAM_INNER}
+			 CheckExit ${OUT} "samtools index failed"
+			 fi
+samtools index ${OUT_BAM_EDGE}
+			 OUT=$?
+			 if [ ${OUT} -ne 0 ]; then
+			 rm -f ${OUT_BAM_EDGE}
 			 CheckExit ${OUT} "samtools index failed"
 			 fi
 
-			 rm -f ${TMP_BAM_INNER}
-			 rm -f ${TMP_BAM_EDGE}
 			 rm -f ${TMP_FQ_EDGE}
 			 rm -f ${TMP_FQ_INNER}
 

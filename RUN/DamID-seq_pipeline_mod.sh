@@ -51,7 +51,7 @@ usage ()
 # set code base
 CODEDIR='/home/anton/data/DAM/RUN'
 ALIGN_SCRIPT="${CODEDIR}/align_local_fq_mod.sh"
-READS2GATC_SCRIPT="${CODEDIR}/reads2GATC.sh"
+READS2GATC_SCRIPT="${CODEDIR}/reads2GATC_mod.sh"
 
 ORG_DIR=$PWD
 ALLSPECIES='human fly'
@@ -78,7 +78,7 @@ echo "using par file ${PARFILE}"
 fi
 
 # redirect stdout and stderr to a log file
-NOW=`date +%y%m%d%H%M`
+NOW=`date +%d-%m-%Y_%H:%M`
 LOG="${PARFILE}_${NOW}.log"
 exec &> ${LOG}
 # echo some stats to log file
