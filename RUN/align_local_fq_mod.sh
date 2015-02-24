@@ -199,7 +199,7 @@ fi
 ##################################################################################
 
 # Main trim reads. Processing cutadapt with the following parameters: 5 '& 3' adapters encountered from 3 or more times, the overlap of the adapter 9 or more bases. Those reads where found adapters write to file out.fastq, where there was no adapters write to file untrim_out.fastq 
-cutadapt -g "${ADPTR_SHORT_5}" -g "${ILLUMINA_5}" -a "${ADPTR_SHORT_3}" -a "${ILLUMINA_3}" -n 3 -O 9 --match-read-wildcards --untrimmed-output $basef/untrim_out.fastq ${IN_FQ} -o $basef/out.fastq > $stats/clip_${fq_base%.fastq.gz}.stats
+cutadapt -g "${ADPTR_SHORT_5}" -g "${ILLUMINA_5}" -a "${ADPTR_SHORT_3}" -a "${ILLUMINA_3}" -e 0.01 -n 3 --overlap 12 --match-read-wildcards --untrimmed-output $basef/untrim_out.fastq ${IN_FQ} -o $basef/out.fastq > $stats/clip_${fq_base%.fastq.gz}.stats
 
 # Remove reads smaller then 9 bp. Process files with truncated adapters - looking GATC fragments in any position by reads with a minimum length of 9 bases, do not cut off. That there was a goes into file out_wo_adapt_gatcs_len9.fastq, reads with smaller length and / or without GATC goes in the trash 
 cutadapt -g "GATC" -a "GATC" -O 4 -m 9 --no-trim --untrimmed-output $basef/out_wo_adapt_wo_gatcs_small_len.fastq $basef/out.fastq -o $basef/out_wo_adapt_gatcs_len9.fastq > $stats/clip_len9_${fq_base%.fastq.gz}.stats
