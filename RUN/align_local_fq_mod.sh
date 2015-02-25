@@ -233,6 +233,8 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 	s3_match_trim_reads=`grep "Matched reads" $stats/clip_len9_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
 	s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//'`
 	s3_match_untrim_reads=`grep "Matched reads" $stats/clip_orig_len_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+	s3_trim_trash_reads=$((${s3_input_trim_reads}-${s3_match_trim_reads}))
+	s3_untrim_trash_reads=$((${s3_input_untrim_reads}-${s3_match_untrim_reads}))
 
 # Calculate percentages
 	s0_reads_pct=`bc <<< "a=$s0_reads; b=$s0_reads; (b/a)*100"`%
@@ -248,55 +250,12 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 	s3_match_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
 	s3_input_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
 	s3_match_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
+	s3_trim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_trim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
+	s3_untrim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_untrim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
 #############################
-
-# record statistic to temporary file
-	echo "<tr><td>GATC</td><td><script>document.write(number_format(${s3_input_trim_reads}, 0, '.', ' '))</script> (${s3_input_trim_reads_pct})</td><td><script>document.write(number_format(${s3_match_trim_reads}, 0, '.', ' '))</script> (${s3_match_trim_reads_pct})</td></tr>" >> $stats/len9.txt
-	echo "<tr><td>GATC</td><td><script>document.write(number_format(${s3_input_untrim_reads}, 0, '.', ' '))</script> (${s3_input_untrim_reads_pct})</td><td><script>document.write(number_format(${s3_match_untrim_reads}, 0, '.', ' '))</script> (${s3_match_untrim_reads_pct})</td></tr>" >> $stats/orig_len.txt
-
-# Starting cycle in which the search for fragments GATC spaced from the edge read at 1, 2, 3 and so on up to 9 bases
-	while [ $count -le 13 ]; do # 4 + 9 = 13 length of short adapter 
-	i=$((13-$((${count}-4)))) # start from 12 calculation of the number of bases to be removed from the original adapter 
-	adptr5=`echo $ADPTR_SHORT_5 | sed -e 's/^.\{'$i'\}//'` # Remove nt from adapter 5' end
-	adptr3=`echo $ADPTR_SHORT_3 | sed -e 's/.\{'$i'\}$//'` # Remove nt from adapter 3' end
-	adptr_len=${#adptr5} # Calculate adpater length
-
-# search gatcs from reads w/o adapters, with gatcs, length >= 9
-	cutadapt -g "^${adptr5}GATC" -a "GATC${adptr3}$" -O $count -e 0.01 --no-trim --untrimmed-output $len9/inner$((${count}-4))-gatcs.fastq $len9/inner$((${count}-5))-gatcs.fastq -o $len9/output$((${count}-4))-gatcs.fastq > $stats/clip_len9_gatcs${count}.stats
-
-# Removal section of the adapter as well as the removal of the same number of nucleotides in line with the quality of the found reads and output in a separate file 
-	cat $len9/output$((${count}-4))-gatcs.fastq | sed  "s/^"${adptr5}"GATC/GATC/" | sed "n;n;n;s/^.\{"${adptr_len}"\}//" | sed "s/GATC"${adptr3}"$/GATC/" | sed "n;n;n;s/.\{"${adptr_len}"\}$//"  > $len9/sed_output${count}-gatcs.fastq
-
-# search gatcs from reads with gatcs, original length
-	cutadapt -g "^${adptr5}GATC" -a "GATC${adptr3}$" -O $count -e 0.01 --no-trim --untrimmed-output $olen/inner$((${count}-4))-gatcs.fastq $olen/inner$((${count}-5))-gatcs.fastq -o $olen/output$((${count}-4))-gatcs.fastq > $stats/clip_orig_len_gatcs${count}.stats
-
-# Removal section of the adapter as well as the removal of the same number of nucleotides in line with the quality of the found reads and output in a separate file 
-	cat $olen/output$((${count}-4))-gatcs.fastq | sed "s/^"${adptr5}"GATC/GATC/" | sed "n;n;n;s/^.\{"${adptr_len}"\}//" | sed "s/GATC"${adptr3}"$/GATC/" | sed "n;n;n;s/.\{"${adptr_len}"\}$//"  > $olen/sed_output${count}-gatcs.fastq
-
-#############################
-###  Variable for report  ###
-#############################
-	s3_input_trim_reads=`grep "Processed reads" $stats/clip_len9_gatcs${count}.stats | sed 's/^[a-zA-Z ^t:]*//'`
-	s3_match_trim_reads=`grep "Matched reads" $stats/clip_len9_gatcs${count}.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
-	s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs${count}.stats | sed 's/^[a-zA-Z ^t:]*//'`
-	s3_match_untrim_reads=`grep "Matched reads" $stats/clip_orig_len_gatcs${count}.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
-
-	s3_input_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_match_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_input_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_match_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
-#############################
-
-# record statistic to temporary file
-	echo "<tr><td>${adptr5}GATC</td><td><script>document.write(number_format(${s3_input_trim_reads}, 0, '.', ' '))</script> (${s3_input_trim_reads_pct})</td><td><script>document.write(number_format(${s3_match_trim_reads}, 0, '.', ' '))</script> (${s3_match_trim_reads_pct})</td></tr>" >> $stats/len9.txt
-	echo "<tr><td>${adptr5}GATC</td><td><script>document.write(number_format(${s3_input_untrim_reads}, 0, '.', ' '))</script> (${s3_input_untrim_reads_pct})</td><td><script>document.write(number_format(${s3_match_untrim_reads}, 0, '.', ' '))</script> (${s3_match_untrim_reads_pct})</td></tr>" >> $stats/orig_len.txt
-
-	count=$(($count+1)) # Increment 
-	done # end of cycle
-
 
 # Combine all founded reads to one file
-	cat $len9/output0-gatcs.fastq $len9/sed_output*-gatcs.fastq $olen/output0-gatcs.fastq $olen/sed_output*-gatcs.fastq > $basef/interim_gatcs_${fq_base}.fastq
+		cat $len9/output0-gatcs.fastq $olen/output0-gatcs.fastq > $basef/interim_gatcs_${fq_base}.fastq
 
 # Remove reads with inner GATC's
 	pre=`head -n 1 $basef/interim_gatcs_${fq_base}.fastq | cut -c 1-2`
@@ -308,17 +267,14 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 	s4_interim_gatcs=`grep "^\+$" $basef/interim_gatcs_${fq_base}.fastq | wc -l`
 	s4_interim_gatcs_pct=`bc <<< "scale=4; a=$s0_reads; b=$s4_interim_gatcs; (b/a)*100" | sed 's/[0].$//'`%
 
-s4_interim_trash_reads=$((${s3_input_trim_reads}+${s3_input_untrim_reads}+${s2_trash_reads}-${s3_match_trim_reads}-${s3_match_untrim_reads}))
-	s4_interim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s4_interim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
-
-	s3_html_trim=`cat $stats/len9.txt`
-	s3_html_untrim=`cat $stats/orig_len.txt`
+		s4_interim_trash_reads=$((${s0_reads}-${s4_interim_gatcs}-${s2_untrim}))
+		s4_interim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s4_interim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
 
 	s5_summary_gatcs=`grep "^\+$" ${TMP_FQ_EDGE} | wc -l`
 	s5_summary_gatcs_pct=`bc <<< "scale=4; a=$s0_reads; b=$s5_summary_gatcs; (b/a)*100" | sed 's/[0].$//'`%
 
-s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_reads}))
-	s5_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s5_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
+		s5_trash_reads=$((${s0_reads}-${s5_summary_gatcs}-${s2_untrim}))
+		s5_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s5_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
 #############################
 
 # Make text statistic in csv file
@@ -384,10 +340,10 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 <div class=\"row\">
 <div class=\"alert\">Removing DamID and Illumina adapters</div>
 <div class=\"span6\"> <h3 align=\"center\"><script>document.write(number_format(${s1_untrim}, 0, '.', ' '))</script> reads (${s1_untrim_pct})</h3> 
-<p align=\"center\">No adapters &ge;9 bp found</p>
+<p align=\"center\">No adapters &ge;12 bp found</p>
 </div>
 <div class=\"span6\"> <h3 align=\"center\"><script>document.write(number_format(${s1_trim}, 0, '.', ' '))</script> reads (${s1_trim_pct})</h3>
-<p align=\"center\">Adapters &ge;9 bp found and removed</p>
+<p align=\"center\">Adapters &ge;12 bp found and removed</p>
 </div>
 </div>
 <div class=\"row\">
@@ -406,19 +362,26 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </div>
 <div class=\"span3\" style=\"color: #f10026\">
 <h4 align=\"center\"><script>document.write(number_format(${s2_trash_reads}, 0, '.', ' '))</script> trash reads (${s2_trash_reads_pct})</h4>
-<p align=\"center\"><ul><li>too short (&lt;9 bp) after removal of adapters</li><li>no GATC(s) after removal of adapters</li><ul></p>
+<p align=\"center\"><ul><li>too short (&lt;12 bp) after removal of adapters</li><li>no GATC(s) after removal of adapters</li><ul></p>
 </div>
 </div>
 <div class=\"row\">
 <div class=\"alert\">Determing location of GATC motives</div>
-<div class=\"span6\" style=\"background-color: #83a136\">
-<table class=\"table table-striped\" align=\"center\">
-<thead>
-<tr><th>Location</th><th>Processed reads</th><th>Matched reads</th></tr></thead>${s3_html_untrim}</table>
+<div class=\"span3\" style=\"background-color: #83a136\">
+<h4 align=\"center\"><script>document.write(number_format(${s3_match_untrim_reads}, 0, '.', ' '))</script> reads (${s3_match_untrim_reads_pct})</h4>
+<p align=\"center\"><ul><li>with edge GATC(s)</li><ul></p>
 </div>
-<div class=\"span6\" style=\"background-color: #abec00\">
-<table class=\"table table-striped\" align=\"center\">
-<thead><tr><th>Location</th><th>Processed reads</th><th>Matched reads</th></tr></thead>${s3_html_trim}</table>
+<div class=\"span3\" style=\"background-color: #83a136; color: #f10026\">
+<h4 align=\"center\"><script>document.write(number_format(${s3_untrim_trash_reads}, 0, '.', ' '))</script> trash reads (${s3_untrim_trash_reads_pct})</h4>
+<p align=\"center\"><ul><li>with inner GATC(s)</li><ul></p>
+</div>
+<div class=\"span3\" style=\"background-color: #abec00\">
+<h4 align=\"center\"><script>document.write(number_format(${s3_match_trim_reads}, 0, '.', ' '))</script> reads (${s3_match_trim_reads_pct})</h4>
+<p align=\"center\"><ul><li>with edge GATC(s)</li><ul></p>
+</div>
+<div class=\"span3\" style=\"background-color: #abec00; color: #f10026\">
+<h4 align=\"center\"><script>document.write(number_format(${s3_trim_trash_reads}, 0, '.', ' '))</script> trash reads (${s3_trim_trash_reads_pct})</h4>
+<p align=\"center\"><ul><li>with inner GATC(s)</li><ul></p>
 </div>
 </div>
 <p>&nbsp;</p>
@@ -430,7 +393,7 @@ s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_rea
 </div>
 <div class=\"span4\" style=\"background-color: #448f30\">
 <h4 align=\"center\"><script>document.write(number_format(${s4_interim_gatcs}, 0, '.', ' '))</script> edge reads (${s4_interim_gatcs_pct})</h4>
-<p align=\"center\"><ul><li>original length & truncated</li><li>with GATC(s) at the edge(s)</li></ul></p>
+<p align=\"center\"><ul><li>original length & truncated</li><li>with GATC(s) at the edge(s)</li><li>possibly with inner GATC(s)</li></ul></p>
 </div>
 <div class=\"span4\" style=\"color: #f10026\">
 <h4 align=\"center\"><script>document.write(number_format(${s4_interim_trash_reads}, 0, '.', ' '))</script> trash reads (${s4_interim_trash_reads_pct})</h4>
