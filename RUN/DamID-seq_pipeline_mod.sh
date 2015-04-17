@@ -216,7 +216,7 @@ echo "end of bowtie2"
 echo ""
 ## end bowtie ###############
 #############################
-
+exit 0
 #############################
 ## run GATC coverage ########
 # check whether we need to restart at later stage

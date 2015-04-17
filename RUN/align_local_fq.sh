@@ -62,8 +62,8 @@ ADPTR_SHORT_5="GGTCGCGGCCGAG"
 ADPTR_LONG_5="CTAATACGACTCACTATAGGGCAGCGTGGTCGCGGCCGAG"
 #make reverse complement of adapter sequences 
 #(${FASTX_REVCOM} expects fasta input, "awk 'NR > 1'" means print everything beyond line 1)
-ADPTR_SHORT_3=`echo ">\n${ADPTR_SHORT_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
-ADPTR_LONG_3=`echo ">\n${ADPTR_LONG_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
+ADPTR_SHORT_3=`echo -e ">\n${ADPTR_SHORT_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
+ADPTR_LONG_3=`echo -e ">\n${ADPTR_LONG_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
 
 # set base filename
 case $1 in

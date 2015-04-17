@@ -45,13 +45,14 @@
 
 usage ()
 {
-  echo "usage: DamID-seq_pipeline_LP120321.sh parameterfile"
+	echo "usage: DamID-seq_pipeline_alex.sh parameterfile"
 }
 
 # set code base
-CODEDIR='/home/anton/data/DAM/oldDAM/oldRUN'
-ALIGN_SCRIPT="${CODEDIR}/align_local_fq.sh"
-READS2GATC_SCRIPT="${CODEDIR}/reads2GATC.sh"
+CODEDIR='/home/anton/data/DAM/RUN'
+ALIGN_SCRIPT="${CODEDIR}/align_local_fq_alex_bowtie_mod.sh"
+READS2GATC_SCRIPT="${CODEDIR}/reads2GATC_alex.sh"
+DSCR=~/data/DAM/RUN/damid_description.csv
 
 ORG_DIR=$PWD
 ALLSPECIES='human fly'
@@ -63,18 +64,18 @@ ALL_ASSEMBLY_FLY='dm3 dm4'
 ########################################################################
 if [ $# -eq 0 ]
 then
-  echo "no parameterfile given"
-  usage
-  exit 1
+echo "no parameterfile given"
+usage
+exit 1
 fi
 PARFILE=$1
 if [ ! -f ${PARFILE} ]
 then
-  echo "parfile ${PARFILE} does not exist"
-  usage
-  exit 1
+echo "parfile ${PARFILE} does not exist"
+usage
+exit 1
 else
-  echo "using par file ${PARFILE}"
+echo "using par file ${PARFILE}"
 fi
 
 # redirect stdout and stderr to a log file
@@ -102,75 +103,75 @@ echo ""
 # fastq files
 if [ -z "${FASTQ_FILES+'xxx'}" ]
 then
-  echo "variable FASTQ_FILES not set, exiting"
-  exit 1
+echo "variable FASTQ_FILES not set, exiting"
+exit 1
 fi
 for fq in ${FASTQ_FILES}
 do
-  if [ ! -e $fq ]
-  then
-    echo "file ${fq} does not exist, exiting"
-    exit 1
-  fi
+if [ ! -e $fq ]
+then
+echo "file ${fq} does not exist, exiting"
+exit 1
+fi
 done
 # SPECIES
 if [ -z "${SPECIES+'xxx'}" ]
 then
-  echo "variable SPECIES not set, exiting"
-  exit 1
+echo "variable SPECIES not set, exiting"
+exit 1
 fi
 correct=0
 for sp in ${ALLSPECIES}
 do
-  echo "specs ${sp}"
-  if [ "${SPECIES}" = "${sp}" ]
-  then
-    correct=1
-  fi
+echo "specs ${sp}"
+if [ "${SPECIES}" = "${sp}" ]
+then
+correct=1
+fi
 done
 if [ ${correct} -eq 0 ]
 then
-  echo "SPECIES should be in ${ALLSPECIES}, exiting"
-  exit 1
+echo "SPECIES should be in ${ALLSPECIES}, exiting"
+exit 1
 fi
 # ASSEMBLY
 if [ -z "${ASSEMBLY+'xxx'}" ]
 then
-  echo "variable ASSEMBLY not set, exiting"
-  exit 1
+echo "variable ASSEMBLY not set, exiting"
+exit 1
 fi
 if [ "${SPECIES}" = 'human' ]
 then
-  ALL_ASSEMBLY=${ALL_ASSEMBLY_HUMAN}
+ALL_ASSEMBLY=${ALL_ASSEMBLY_HUMAN}
 elif [ ${SPECIES} = 'fly' ]
 then
-  ALL_ASSEMBLY=${ALL_ASSEMBLY_FLY}
+ALL_ASSEMBLY=${ALL_ASSEMBLY_FLY}
 fi
 for as in ${ALL_ASSEMBLY}
 do
-  echo "ass $as"
-  if [ "${ASSEMBLY}" = "${as}" ]
-  then
-    correct=1
-  fi
+echo "ass $as"
+if [ "${ASSEMBLY}" = "${as}" ]
+then
+correct=1
+fi
 done
 if [ ${correct} -eq 0 ]
 then
-  echo "for species ${SPECIES} ASSEMBLY should be in ${ALL_ASSEMBLY}, exiting"
-  exit 1
+echo "for species ${SPECIES} ASSEMBLY should be in ${ALL_ASSEMBLY}, exiting"
+exit 1
 fi
 # OUTPUTDIR
 if [ -z "${OUTPUT_DIR+'xxx'}" ]
 then
-  echo "variable OUTPUT_DIR not set, exiting"
-  exit 1
+echo "variable OUTPUT_DIR not set, exiting"
+exit 1
 fi
 if [ -d "${OUTPUT_DIR}" ]
 then
-  echo "directory for output exists already: ${OUTPUT_DIR}."
-  echo "Attempting to continue where previous analysis broke down."
+echo "directory for output exists already: ${OUTPUT_DIR}."
+echo "Attempting to continue where previous analysis broke down."
 else
-  mkdir "${OUTPUT_DIR}"
+mkdir "${OUTPUT_DIR}"
 fi
 
 OUTPUT_DIR="`cd \"$OUTPUT_DIR\" 2>/dev/null && pwd || echo \"$OUTPUT_DIR\"`"
@@ -187,33 +188,42 @@ echo ""
 echo "run bowtie2 for aligning reads to genome"
 # check whether we need to restart after failed run
 if [ -d ${OUTPUT_DIR}/alignedReads ]; then
-  echo "bowtie has been run succesful previously, skipping this step"
+	echo "bowtie has been run succesful previously, skipping this step"
 else
-  # tempdir for bowtie output
-  TMP_DIR="${OUTPUT_DIR}/alignedReads_tmp"
-  mkdir ${TMP_DIR}
-  # mkdir ${OUTPUT_DIR}/alignedReads
-  for df in ${FASTQ_FILES}; do
-    D=`dirname "${df}"`
-    B=`basename "${df}"`
-    A="`cd \"$D\" 2>/dev/null && pwd || echo \"$D\"`/$B"
-    ln -s ${A} ${TMP_DIR}
-  done  
-  cd ${TMP_DIR}
-#  BASE=${HOME}/projects/DamID-seq
-#  SCRIPT=${BASE}/LP111111_alignedReads/align_local_fq_LP120424.sh
-  for fq in ${FASTQ_FILES}; do
-    fq_local=`basename ${fq}`
-    bash ${ALIGN_SCRIPT} ${fq_local} ${ASSEMBLY} ${CODEDIR}
-    if [ $? -ne 0 ]; then
-      echo "alignscript failed on fastq file; ${fq_local}, aborting" 1>&2
-      exit 1
-    fi
-    rm -f ${fq_local}
-  done
-  cd $ORG_DIR
-  # move temp output dir to $OUT_DIR
-  mv "${TMP_DIR}" "${OUTPUT_DIR}/alignedReads"
+	# tempdir for bowtie output
+	TMP_DIR="${OUTPUT_DIR}/alignedReads_tmp"
+	mkdir ${TMP_DIR}
+for df in ${FASTQ_FILES}; do
+	D=`dirname "${df}"`
+	B=`basename "${df}"`
+	A="`cd \"$D\" 2>/dev/null && pwd || echo \"$D\"`/$B"
+	ln -s ${A} ${TMP_DIR}
+done  
+cd ${TMP_DIR}
+for fq in ${FASTQ_FILES}; do
+	fq_local=`basename ${fq}`
+	fq_human=`grep -w $fq_local $DSCR | sed -r "s/[a-zA-Z0-9_-.]*$//;s/\t//"` # human-readable name in variable, get by parse $DSCR
+	fq_tag=`echo $fq_human | sed -r "s/(.*)\.(.*)\.(.*)\.(.*)/\3/;s/.*_(F|R)/\1/"` # Tag to match forward or reverse reads
+	if [ "$fq_tag" = "F" ]; then
+		fq_prefix=`echo $fq_human | sed -r "s/(.+)${fq_tag}.+/\1/"` # Get the name of reads from one replicate
+		fq_rep=`echo $fq_human | sed -r "s/(.+)${fq_tag}(.+)/\2/"` # Get the replicate number
+		fq_local=`grep -P "${fq_prefix}(F|R)${fq_rep}" $DSCR | sed -r "s/.+[[:space:]]+(.+)/\1/" | sed ':a;N;$!ba;s/\n/ /g'` # Generate list of files who involved in alinging
+	elif [ "$fq_tag" = "R" ]; then
+		echo "Skip reverse reads from $fq_human."
+		continue
+	fi
+
+	bash -x ${ALIGN_SCRIPT} ${fq_local} ${ASSEMBLY}
+
+	if [ $? -ne 0 ]; then
+		echo "alignscript failed on fastq file; ${fq_local}, aborting" 1>&2
+		exit 1
+	fi
+	rm -f ${fq_local}
+done
+cd $ORG_DIR
+# move temp output dir to $OUT_DIR
+mv "${TMP_DIR}" "${OUTPUT_DIR}/alignedReads"
 fi
 echo "end of bowtie2"
 echo ""
@@ -225,45 +235,47 @@ echo ""
 # check whether we need to restart at later stage
 echo "run Rscript for read coverage per GATC fragment"
 if [ -d ${OUTPUT_DIR}/gatcReadCounts ]; then
-  echo "GATC coverage has been run succesful previously, skipping this step"
+echo "GATC coverage has been run succesful previously, skipping this step"
 else
-#  BASE=${HOME}/projects/DamID-seq
-#  SH_SCRIPT="${BASE}/LP120507_HTSeq_test/reads2GATC_LP120508.sh"
-#  READS2GATC_SCRIPT="${CODEDIR}/reads2GATC_LP120508.sh"
- # INFILES=`ls ${OUTPUT_DIR}/alignedReads/*bam | grep -v '.*x.bam$' | grep -v '.*x_GATCmapped.bam$'`
-  
-  INFILES=${OUTPUT_DIR}/alignedReads/*bam
+T_DIR="${OUTPUT_DIR}/gatcReadCounts_tmp"
+mkdir ${T_DIR}
+mkdir ${OUTPUT_DIR}/gatcReadCounts
+for fq in ${FASTQ_FILES}; do
+fq_base=`basename $fq`
+fq_base=${fq_base%.fastq.gz}
+INFILES=${OUTPUT_DIR}/alignedReads/$fq_base/*bam
 
-  # tempdir for GATC_mapping output
-  TMP_DIR="${OUTPUT_DIR}/gatcReadCounts_tmp"
-  if [ ! -d "${TMP_DIR}" ]; then
-    mkdir ${TMP_DIR}
-  fi
-  cd ${TMP_DIR}
-  for f in ${INFILES}; do
-    # do not process bam files with 2x and 3x reads (multi-reads)
-     if [[ ${f} =~ "2x.bam" ]] || [[ ${f} =~ "3x.bam" ]]; then
-      echo "skipping ${f}"
-      continue;
-     fi
-    # echo "processing ${f}"
-    # remove path from filename
-     basef=${f##*/}
-    # and remove extension
-     basef=${basef%.*}
-    # echo "logging to ${basef}"
-    bash ${READS2GATC_SCRIPT} $f ${CODEDIR}
-    if [ $? -ne 0 ]; then
-      echo "GATC coverage script failed on ${f}, aborting"
-      exit 1
-    fi
-  done
-  cd ${ORG_DIR}
-  mv -f ${TMP_DIR} ${OUTPUT_DIR}/gatcReadCounts
-  if [ $? -ne 0 ]; then
-    echo "cannot move temp output dir to ${OUTPUT_DIR}/gatcReadCounts, aborting" 1>&2
-    exit 1
-  fi
+# tempdir for GATC_mapping output
+TMP_DIR="${OUTPUT_DIR}/gatcReadCounts_tmp/$fq_base"
+if [ ! -d "${TMP_DIR}" ]; then
+mkdir ${TMP_DIR}
+fi
+cd ${TMP_DIR}
+for f in ${INFILES}; do
+# do not process bam files with 2x and 3x reads (multi-reads)
+if [[ ${f} =~ "2x.bam" ]] || [[ ${f} =~ "3x.bam" ]]; then
+echo "skipping ${f}"
+continue;
+fi
+# echo "processing ${f}"
+# remove path from filename
+basef=${f##*/}
+# and remove extension
+basef=${basef%.*}
+# echo "logging to ${basef}"
+bash -x ${READS2GATC_SCRIPT} $f ${CODEDIR}
+if [ $? -ne 0 ]; then
+echo "GATC coverage script failed on ${f}, aborting"
+exit 1
+fi
+done
+cd ${ORG_DIR}
+mv -f ${TMP_DIR} ${OUTPUT_DIR}/gatcReadCounts/$fq_base
+if [ $? -ne 0 ]; then
+echo "cannot move temp output dir to ${OUTPUT_DIR}/gatcReadCounts/$fq_base, aborting" 1>&2
+exit 1
+fi
+done
 fi
 echo "end of Rscript for read coverage per GATC fragment"
 echo ""
@@ -295,4 +307,4 @@ echo ""
 #/usr/local/src/R-2.14.1-build_LP120202/bin/Rscript -e "library(bioinfR); parfile <- '$PARFILE'; runSweave('$1', driver='knit')"
 
 # instead of runSweave use knit() directly plus some form of texi2pdf
-
+rm -R ${T_DIR}

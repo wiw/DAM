@@ -62,8 +62,8 @@ ADPTR_SHORT_5="GGTCGCGGCCGAG"
 ADPTR_LONG_5="CTAATACGACTCACTATAGGGCAGCGTGGTCGCGGCCGAG"
 #make reverse complement of adapter sequences 
 #(${FASTX_REVCOM} expects fasta input, "awk 'NR > 1'" means print everything beyond line 1)
-ADPTR_SHORT_3=`echo ">\n${ADPTR_SHORT_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
-ADPTR_LONG_3=`echo ">\n${ADPTR_LONG_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
+ADPTR_SHORT_3=`echo -e ">\n${ADPTR_SHORT_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
+ADPTR_LONG_3=`echo -e ">\n${ADPTR_LONG_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
 
 # set base filename
 case $1 in
@@ -197,6 +197,10 @@ CORE=`lscpu | grep 'CPU(s):' | sed -n '1p' | rev | cut -c 1`
 #Run Bowtie
 BOWTIE_PAR="-k 3 -p ${CORE} -t --phred33 --local -x ${BOWTIE2_INDEXES}${ASSEMBLY}"
 cat ${TMP_FQ_INNER} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM_INNER} ) 2> ${TMP_STATS_INNER}
+cat ${TMP_FQ_EDGE} | \
+  (${BOWTIE2} ${BOWTIE_PAR} -U - | \
+  samtools view -bS - -o ${TMP_BAM_EDGE} ) 2> ${TMP_STATS_EDGE}
+exit 0
 CheckExit $? "bowtie2 failed on inner reads"
 echo '1'
 # # extract all unmapped reads, collect read sequences, and read count.

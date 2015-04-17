@@ -49,7 +49,7 @@ usage ()
 }
 
 # set code base
-CODEDIR='~/data/DAM/RUN'
+CODEDIR='/home/anton/data/DAM/RUN'
 ALIGN_SCRIPT="${CODEDIR}/align_local_fq.sh"
 READS2GATC_SCRIPT="${CODEDIR}/reads2GATC.sh"
 
@@ -78,7 +78,7 @@ else
 fi
 
 # redirect stdout and stderr to a log file
-NOW=`date +%y%m%d%H%M`
+NOW=`date +%d-%m-%Y_%H:%M`
 LOG="${PARFILE}_${NOW}.log"
 exec &> ${LOG}
 # echo some stats to log file
@@ -204,7 +204,7 @@ else
 #  SCRIPT=${BASE}/LP111111_alignedReads/align_local_fq_LP120424.sh
   for fq in ${FASTQ_FILES}; do
     fq_local=`basename ${fq}`
-    sh -x ${ALIGN_SCRIPT} ${fq_local} ${ASSEMBLY} ${CODEDIR}
+    bash -x ${ALIGN_SCRIPT} ${fq_local} ${ASSEMBLY} ${CODEDIR}
     if [ $? -ne 0 ]; then
       echo "alignscript failed on fastq file; ${fq_local}, aborting" 1>&2
       exit 1
@@ -252,7 +252,7 @@ else
     # and remove extension
      basef=${basef%.*}
     # echo "logging to ${basef}"
-    sh -x ${READS2GATC_SCRIPT} $f ${CODEDIR}
+    bash -x ${READS2GATC_SCRIPT} $f ${CODEDIR}
     if [ $? -ne 0 ]; then
       echo "GATC coverage script failed on ${f}, aborting"
       exit 1

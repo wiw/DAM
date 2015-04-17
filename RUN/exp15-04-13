@@ -1,0 +1,4 @@
+SPECIES=fly
+FASTQ_FILES='/home/anton/backup/tinput/exp/*.fastq.gz'
+ASSEMBLY=dm3
+OUTPUT_DIR=/home/anton/backup/tpoutput/bowtie/exp15_04_13

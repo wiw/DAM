@@ -31,15 +31,15 @@
 #   130123: - added some explanatory comments
 ###############################################################################
 
-if [ $# -lt 2 ]
-then
-echo 1>&2 Usage: align_local_fq.sh input_file.fq.gz assembly_version codedir [model-matrix-file]
-exit 1
-fi
+		if [ $# -lt 2 ]
+		then
+		echo 1>&2 Usage: align_local_fq.sh input_file.fq.gz assembly_version codedir [model-matrix-file]
+		exit 1
+		fi
 
 # set some paths for executables
-BOWTIE2=bowtie2
-CUTADAPT=cutadapt
+		BOWTIE2=bowtie2
+		CUTADAPT=cutadapt
 FASTX_REVCOM=fastx_reverse_complement
 BOWTIE2_INDEXES=~/data/DAM/indexes/
 DSCR=~/data/DAM/RUN/damid_description.csv # path to description file which establishes a correspondence between the file name and its human-readable name.
@@ -81,66 +81,66 @@ basef=${fq_base%.fastq.gz}
 stats=${fq_base%.fastq.gz}/stats
 len9=${fq_base%.fastq.gz}/len9 # folder for cuted reads 
 olen=${fq_base%.fastq.gz}/orig_len # folder for uncuted reads
+tmpf="$len9 $olen"
 # make folder defined on last step
 mkdir ${fq_base%.fastq.gz} $len9 $olen $stats
-count=5 # some variables corresponds to the length of the adapter with a fragment of one GATC base (5 total)
+
 
 
 # set base filename
-	case $1 in
-	*.fq.gz) 
-	OUT_BAM=$basef/${IN_FQ%.fq.gz}_local.bam
-	CAT=zcat ;;
-	*.fastq.gz) 
-	OUT_BAM=$basef/${IN_FQ%.fastq.gz}_local.bam
-	CAT=zcat ;;
-	*.fastq) 
-	OUT_BAM=$basef/${IN_FQ%.fastq}_local.bam
-	CAT=cat ;;
-	*.fq) 
-	OUT_BAM=$basef/${IN_FQ%.fq}_local.bam
-	CAT=cat ;;
-	*) 
-	echo "inputfile (${IN_FQ}) should either be gzipped fastq"
-	echo "(*.fq.gz or fastq.gz) or fastq (*.fq or *.fastq)" 
-	exit 1 ;;
-	esac
+case $1 in
+*.fq.gz) 
+OUT_BAM=$basef/${IN_FQ%.fq.gz}_local.bam
+CAT=zcat ;;
+*.fastq.gz) 
+OUT_BAM=$basef/${IN_FQ%.fastq.gz}_local.bam
+CAT=zcat ;;
+*.fastq) 
+OUT_BAM=$basef/${IN_FQ%.fastq}_local.bam
+CAT=cat ;;
+*.fq) 
+OUT_BAM=$basef/${IN_FQ%.fq}_local.bam
+CAT=cat ;;
+*) 
+echo "inputfile (${IN_FQ}) should either be gzipped fastq"
+echo "(*.fq.gz or fastq.gz) or fastq (*.fq or *.fastq)" 
+exit 1 ;;
+esac
 
 # set additional output files based on base filename
-	OUT_BAM_INNER=${OUT_BAM%_local.bam}_inner_local.bam
-	OUT_BAM_EDGE=${OUT_BAM%_local.bam}_edge_local.bam
-	OUTx2_BAM=${OUT_BAM%_local.bam}_local_2x.bam
-	OUTx3_BAM=${OUT_BAM%_local.bam}_local_3x.bam
-	BWT_STATS=${OUT_BAM%_local.bam}_local.bowtie_stats
-	UNMAPPED_INNER=${OUT_BAM%_local.bam}_unmappedInnerReads.txt.gz
-	UNMAPPED_EDGE=${OUT_BAM%_local.bam}_unmappedEdgeReads.txt.gz
-	CLIP_STATS=${OUT_BAM%_local.bam}_local.clip_stats
+OUT_BAM_INNER=${OUT_BAM%_local.bam}_inner_local.bam
+OUT_BAM_EDGE=${OUT_BAM%_local.bam}_edge_local.bam
+OUTx2_BAM=${OUT_BAM%_local.bam}_local_2x.bam
+OUTx3_BAM=${OUT_BAM%_local.bam}_local_3x.bam
+BWT_STATS=${OUT_BAM%_local.bam}_local.bowtie_stats
+UNMAPPED_INNER=${OUT_BAM%_local.bam}_unmappedInnerReads.txt.gz
+UNMAPPED_EDGE=${OUT_BAM%_local.bam}_unmappedEdgeReads.txt.gz
+CLIP_STATS=${OUT_BAM%_local.bam}_local.clip_stats
 
 # set species and assembly (for read alignment)
-	case $2 in
-	dm3)
-	ASSEMBLY=dmel_r5.41 ;;
-	hg18)
-	ASSEMBLY=hg18 ;;
-	hg19)
-	ASSEMBLY=hg19 ;;
-	mm9)
-	ASSEMBLY=mm9 ;;
-	*)
-	echo "assembly $2 not know, exiting"
-	exit 1 ;;
-	esac
+case $2 in
+dm3)
+ASSEMBLY=dmel_r5.41 ;;
+hg18)
+ASSEMBLY=hg18 ;;
+hg19)
+ASSEMBLY=hg19 ;;
+mm9)
+ASSEMBLY=mm9 ;;
+*)
+echo "assembly $2 not know, exiting"
+exit 1 ;;
+esac
 
 ################################################
 # create temporary output files
 ################################################
-	TMP_BAM_INNER=`mktemp $basef/tmp_bam_inner.XXXXXXXXXX`
-	TMP_BAM_EDGE=`mktemp $basef/tmp_bam_edge.XXXXXXXXXX`
-	TMP_STATS_INNER=`mktemp $basef/tmp_stats_inner.XXXXXXXXXX`
-	TMP_STATS_EDGE=`mktemp $basef/tmp_stats_edge.XXXXXXXXXX`
-	TMP_FQ_EDGE=`mktemp $basef/tmp_fq_edge.XXXXXXXXXX`
-	TMP_FQ_INNER=`mktemp $basef/tmp_fq_inner.XXXXXXXXXX`
-	TMP_BAM_UNALIGN=`mktemp $basef/tmp_bam_unalign.XXXXXXXXXX`
+TMP_BAM_INNER=`mktemp $basef/tmp_bam_inner.XXXXXXXXXX`
+TMP_BAM_EDGE=`mktemp $basef/tmp_bam_edge.XXXXXXXXXX`
+TMP_STATS_INNER=`mktemp $basef/tmp_stats_inner.XXXXXXXXXX`
+TMP_STATS_EDGE=`mktemp $basef/tmp_stats_edge.XXXXXXXXXX`
+TMP_FQ_EDGE=`mktemp $basef/tmp_fq_edge.XXXXXXXXXX`
+TMP_FQ_INNER=`mktemp $basef/tmp_fq_inner.XXXXXXXXXX`
 
 # define function that checks exit code last command
 CheckExit()
@@ -208,34 +208,18 @@ cutadapt -g "GATC" -a "GATC" -O 4 -m 9 --no-trim --untrimmed-output $basef/out_w
 # Sort reads in untrimmed reads by presence GATC's. Process files with reads without adapters - am also looking for GATC fragments. Nothing is cut off. Reads with fragments are sent to a file untrim_out_gatcs_orig_len.fastq, without going into the file fragments TMP_FQ_INNER (untrim_out_wo_gatcs_orig_len.fastq)
 cutadapt -g "GATC" -a "GATC" -O 4 --no-trim --untrimmed-output ${TMP_FQ_INNER} $basef/untrim_out.fastq -o $basef/untrim_out_gatcs_orig_len.fastq > $stats/clip_orig_len_${fq_base%.fastq.gz}.stats
 
-# Sort reads by edge and with shift from 1 to 9 bases of adapters. This block of code looking for reads with GATC fragments at the edges and slightly indented from the edge - up to 9 nucleotides from the adapter as a direct and the reverse side. 
-
-# Initial processing and search only the edge of the file fragments out_wo_adapt_gatcs_len9.fastq, overlapping 4 base, 1% error
-cutadapt -g "^GATC" -a "GATC$" -O 4 -e 0.01 --no-trim --untrimmed-output $len9/inner0-gatcs.fastq $basef/out_wo_adapt_gatcs_len9.fastq -o $len9/output0-gatcs.fastq > $stats/clip_len9_gatcs4.stats
-
-# Initial processing and search only the edge of the file fragments untrim_out_gatcs_orig_len.fastq, overlapping 4 base 1% error
-cutadapt -g "^GATC" -a "GATC$" -O 4 -e 0.01 --no-trim --untrimmed-output $olen/inner0-gatcs.fastq $basef/untrim_out_gatcs_orig_len.fastq -o $olen/output0-gatcs.fastq > $stats/clip_orig_len_gatcs4.stats
 
 #############################
 ###  Variable for report  ###
 #############################
 s0_reads=`grep "Processed reads" $stats/clip_${fq_base%.fastq.gz}.stats | sed 's/^[a-zA-Z ^t:]*//'`
-
 s1_trim=`grep "Trimmed reads" $stats/clip_${fq_base%.fastq.gz}.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
 s1_untrim=$((${s0_reads} - ${s1_trim}))
-
 	s2_trim_gatcs=`grep "^\+$" $basef/out_wo_adapt_gatcs_len9.fastq | wc -l`
 	s2_untrim_trash_gatcs=`grep "^\+$" $basef/out_wo_adapt_wo_gatcs_small_len.fastq | wc -l`
 s2_trash_reads=$(($s1_trim-$s2_trim_gatcs))
 	s2_untrim_gatc=`grep "Matched reads" $stats/clip_orig_len_${fq_base%.fastq.gz}.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
 s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
-
-	s3_input_trim_reads=`grep "Processed reads" $stats/clip_len9_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//'`
-	s3_match_trim_reads=`grep "Matched reads" $stats/clip_len9_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
-	s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//'`
-	s3_match_untrim_reads=`grep "Matched reads" $stats/clip_orig_len_gatcs4.stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
-	s3_trim_trash_reads=$((${s3_input_trim_reads}-${s3_match_trim_reads}))
-	s3_untrim_trash_reads=$((${s3_input_untrim_reads}-${s3_match_untrim_reads}))
 
 # Calculate percentages
 	s0_reads_pct=`bc <<< "a=$s0_reads; b=$s0_reads; (b/a)*100"`%
@@ -247,20 +231,97 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 	s2_untrim_gatc_pct=`bc <<< "scale=4; a=$s0_reads; b=$s2_untrim_gatc; (b/a)*100" | sed 's/[0].$//'`%
 	s2_untrim_pct=`bc <<< "scale=4; a=$s0_reads; b=$s2_untrim; (b/a)*100" | sed 's/[0].$//'`%
 
-	s3_input_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_match_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_input_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_match_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_trim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_trim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
-	s3_untrim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_untrim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
 #############################
 
+# Starting cycle in which the search for fragments GATC spaced from the edge read at 1, 2, 3 and so on up to 9 bases
+	for (( count = 1; count <= 13; count++ )); do # 13 base = length of short adapter 
+		ADPTR_SHORT_5="GGTCGCGGCCGAG"
+		adptr5=`echo $ADPTR_SHORT_5 | sed -e 's/^.\{'$count'\}//'` # Remove nt from adapter 5' end
+		adptr3=`echo $ADPTR_SHORT_3 | sed -e 's/.\{'$count'\}$//'` # Remove nt from adapter 3' end
+		adptr_len=${#adptr5} # Calculate adapter length
+	# Sort reads by edge and with shift from 1 to 9 bases of adapters. This block of code looking for reads with GATC fragments at the edges and slightly indented from the edge - up to 9 nucleotides from the adapter as a direct and the reverse side. 
+		for folder in $tmpf; do
+			if [ "$folder" == "$len9" ]; then
+					ins="len9"
+					sourcef="$basef/out_wo_adapt_gatcs_len9.fastq"
+				else
+					ins="orig_len"
+					sourcef="$basef/untrim_out_gatcs_orig_len.fastq"
+				fi
+			if (( $count == 1 )); then # Search and cut only 12 base adapters
+				cutadapt -g "^${adptr5}" -a "${adptr3}$" -O ${#adptr5} -e 0.01 --untrimmed-output $folder/inner$((13-${count}))-gatcs.fastq $sourcef -o $folder/output$((13-${count}))-gatcs.fastq > $stats/clip_${ins}_gatcs$((13-${count})).stats
+			elif (( ($count > 1) && ($count < 12) )); then # Search and cut adapters the length of which exist between 2-12 bases
+				cutadapt -g "^${adptr5}" -a "${adptr3}$" -O ${#adptr5} -e 0.01 --untrimmed-output $folder/inner$((13-${count}))-gatcs.fastq $folder/inner$((14-${count}))-gatcs.fastq -o $folder/output$((13-${count}))-gatcs.fastq > $stats/clip_${ins}_gatcs$((13-${count})).stats
+			elif (( $count == 12 )); then
+				atom="5 3"
+				for num in $atom; do
+					if (( $num == 5 )); then
+						ADAPTER="^${adptr5}GATC"
+						opt="g"
+						untrimf="$folder/inner$((13-${count}))-gatcs.tmp.fastq"
+						inputf="$folder/inner$((14-${count}))-gatcs.fastq"
+					else
+						ADAPTER="GATC${adptr3}$"
+						opt="a"
+						untrimf="$folder/inner$((13-${count}))-gatcs.fastq"
+						inputf="$folder/inner$((13-${count}))-gatcs.tmp.fastq"
+					fi
+					cutadapt -${opt} $ADAPTER -O $((4+${#adptr5})) -e 0.01 --no-trim --untrimmed-output $untrimf $inputf -o $folder/output$((13-${count}))-gatcs${num}.fastq > $stats/clip_${ins}_gatcs$((13-${count})).stats${num}
+					cat $folder/output$((13-${count}))-gatcs${num}.fastq | sed  "s/"${ADAPTER}"/GATC/" | sed "n;n;n;s/^.\{"${#adptr5}"\}//" >> $folder/output$((13-${count}))-gatcs.fastq
+					rm $folder/output$((13-${count}))-gatcs${num}.fastq
+				done
+			else # Search and SORT reads with edge GATC's
+				cutadapt -g "^GATC" -a "GATC$" -O 4 -e 0.01 --no-trim --untrimmed-output $folder/inner$((13-${count}))-gatcs.fastq $folder/inner$((14-${count}))-gatcs.fastq -o $folder/output$((13-${count}))-gatcs.fastq > $stats/clip_${ins}_gatcs$((13-${count})).stats
+			fi
+			
+		done
+
+	#############################
+	###  Variable for report  ###
+	#############################
+
+		if (( $count <= 11 )); then
+			s3_match_trim_reads=`grep "Trimmed reads" $stats/clip_len9_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3_match_untrim_reads=`grep "Trimmed reads" $stats/clip_orig_len_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3_input_trim_reads=`grep "Processed reads" $stats/clip_len9_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//'`
+			s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//'`
+		elif (($count == 12)); then
+			s3tmp5=`grep "Matched reads" $stats/clip_len9_gatcs$((13-${count})).stats5 | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3tmp3=`grep "Matched reads" $stats/clip_len9_gatcs$((13-${count})).stats3 | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3_match_trim_reads=$((${s3tmp3} + ${s3tmp5}))
+			s3utmp5=`grep "Matched reads" $stats/clip_orig_len_gatcs$((13-${count})).stats5 | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3utmp3=`grep "Matched reads" $stats/clip_orig_len_gatcs$((13-${count})).stats3 | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3_match_untrim_reads=$((${s3utmp3} + ${s3utmp5}))
+			s3_input_trim_reads=`grep "Processed reads" $stats/clip_len9_gatcs$((13-${count})).stats5 | sed 's/^[a-zA-Z ^t:]*//'`
+			s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs$((13-${count})).stats5 | sed 's/^[a-zA-Z ^t:]*//'`
+
+		else
+			s3_match_trim_reads=`grep "Matched reads" $stats/clip_len9_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3_match_untrim_reads=`grep "Matched reads" $stats/clip_orig_len_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//;s/[%()0-9.]*$//;s/[ ^]*$//'`
+			s3_input_trim_reads=`grep "Processed reads" $stats/clip_len9_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//'`
+			s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//'`
+		fi
+
+		
+
+		s3_input_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
+		s3_match_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
+		s3_input_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
+		s3_match_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
+	#############################
+
+	# record statistic to temporary file
+		echo "<tr><td>${adptr5}GATC</td><td><script>document.write(number_format(${s3_input_trim_reads}, 0, '.', ' '))</script> (${s3_input_trim_reads_pct})</td><td><script>document.write(number_format(${s3_match_trim_reads}, 0, '.', ' '))</script> (${s3_match_trim_reads_pct})</td></tr>" >> $stats/len9.txt
+		echo "<tr><td>${adptr5}GATC</td><td><script>document.write(number_format(${s3_input_untrim_reads}, 0, '.', ' '))</script> (${s3_input_untrim_reads_pct})</td><td><script>document.write(number_format(${s3_match_untrim_reads}, 0, '.', ' '))</script> (${s3_match_untrim_reads_pct})</td></tr>" >> $stats/orig_len.txt
+	done # end of cycle
+
+
 # Combine all founded reads to one file
-		cat $len9/output0-gatcs.fastq $olen/output0-gatcs.fastq > $basef/interim_gatcs_${fq_base}.fastq
+	cat $len9/output*-gatcs.fastq $olen/output*-gatcs.fastq > $basef/interim_gatcs_${fq_base}.fastq
 
 # Remove reads with inner GATC's
-	pre=`head -n 1 $basef/interim_gatcs_${fq_base}.fastq | cut -c 1-2`
 	cat $basef/interim_gatcs_${fq_base}.fastq | perl -e 'while($h=<>){$s=<>;$t=<>.<>; if($s!~/.+GATC.+/){print $h.$s.$t}}' > ${TMP_FQ_EDGE}
+
 
 #############################
 ###  Variable for report  ###
@@ -268,14 +329,17 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 	s4_interim_gatcs=`grep "^\+$" $basef/interim_gatcs_${fq_base}.fastq | wc -l`
 	s4_interim_gatcs_pct=`bc <<< "scale=4; a=$s0_reads; b=$s4_interim_gatcs; (b/a)*100" | sed 's/[0].$//'`%
 
-		s4_interim_trash_reads=$((${s0_reads}-${s4_interim_gatcs}-${s2_untrim}))
-		s4_interim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s4_interim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
+	s4_interim_trash_reads=$((${s3_input_trim_reads}+${s3_input_untrim_reads}+${s2_trash_reads}-${s3_match_trim_reads}-${s3_match_untrim_reads}))
+	s4_interim_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s4_interim_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
+
+	s3_html_trim=`cat $stats/len9.txt`
+	s3_html_untrim=`cat $stats/orig_len.txt`
 
 	s5_summary_gatcs=`grep "^\+$" ${TMP_FQ_EDGE} | wc -l`
 	s5_summary_gatcs_pct=`bc <<< "scale=4; a=$s0_reads; b=$s5_summary_gatcs; (b/a)*100" | sed 's/[0].$//'`%
 
-		s5_trash_reads=$((${s0_reads}-${s5_summary_gatcs}-${s2_untrim}))
-		s5_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s5_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
+	s5_trash_reads=$((${s4_interim_gatcs}-${s5_summary_gatcs}+${s4_interim_trash_reads}))
+	s5_trash_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s5_trash_reads; (b/a)*100" | sed 's/[0].$//'`%
 #############################
 
 # Make text statistic in csv file
@@ -368,21 +432,14 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 </div>
 <div class=\"row\">
 <div class=\"alert\">Determing location of GATC motives</div>
-<div class=\"span3\" style=\"background-color: #83a136\">
-<h4 align=\"center\"><script>document.write(number_format(${s3_match_untrim_reads}, 0, '.', ' '))</script> reads (${s3_match_untrim_reads_pct})</h4>
-<p align=\"center\"><ul><li>with edge GATC(s)</li><ul></p>
+<div class=\"span6\" style=\"background-color: #83a136\">
+<table class=\"table table-striped\" align=\"center\">
+<thead>
+<tr><th>Location</th><th>Processed reads</th><th>Matched reads</th></tr></thead>${s3_html_untrim}</table>
 </div>
-<div class=\"span3\" style=\"background-color: #83a136; color: #f10026\">
-<h4 align=\"center\"><script>document.write(number_format(${s3_untrim_trash_reads}, 0, '.', ' '))</script> trash reads (${s3_untrim_trash_reads_pct})</h4>
-<p align=\"center\"><ul><li>with inner GATC(s)</li><ul></p>
-</div>
-<div class=\"span3\" style=\"background-color: #abec00\">
-<h4 align=\"center\"><script>document.write(number_format(${s3_match_trim_reads}, 0, '.', ' '))</script> reads (${s3_match_trim_reads_pct})</h4>
-<p align=\"center\"><ul><li>with edge GATC(s)</li><ul></p>
-</div>
-<div class=\"span3\" style=\"background-color: #abec00; color: #f10026\">
-<h4 align=\"center\"><script>document.write(number_format(${s3_trim_trash_reads}, 0, '.', ' '))</script> trash reads (${s3_trim_trash_reads_pct})</h4>
-<p align=\"center\"><ul><li>with inner GATC(s)</li><ul></p>
+<div class=\"span6\" style=\"background-color: #abec00\">
+<table class=\"table table-striped\" align=\"center\">
+<thead><tr><th>Location</th><th>Processed reads</th><th>Matched reads</th></tr></thead>${s3_html_trim}</table>
 </div>
 </div>
 <p>&nbsp;</p>
@@ -424,7 +481,7 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 </body>
 </html>" > $basef/${fq_human}_report.html
 # remove intermediate files
-#rm -R $len9 $olen $stats $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
+rm -R $len9 $olen $stats $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
 #mv $basef $OUT # If folder $OUT is defined then to move output data from $DIR to $OUT
 
 ###############################################################################
@@ -437,10 +494,10 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 #Get number of CPU Cores
 CORE=`lscpu | grep 'CPU(s):' | sed -n '1p' | rev | cut -c 1`
 #Run Bowtie
-BOWTIE_PAR="-k 3 -p ${CORE} -t --phred33 --local -x ${BOWTIE2_INDEXES}${ASSEMBLY}"
-cat ${TMP_FQ_INNER} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM_INNER} ) 2> ${TMP_STATS_INNER}
-CheckExit $? "bowtie2 failed on inner reads"
-echo '1'
+			       BOWTIE_PAR="-k 3 -p ${CORE} -t --phred33 --local -x ${BOWTIE2_INDEXES}${ASSEMBLY}"
+			       cat ${TMP_FQ_INNER} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM_INNER} ) 2> ${TMP_STATS_INNER}
+			       CheckExit $? "bowtie2 failed on inner reads"
+			       echo '1'
 # # extract all unmapped reads, collect read sequences, and read count.
 # # Save in separate files
 # samtools view ${TMP_BAM_INNER} | awk '$2 == 4' | cut -f 10 | sort | uniq -c |\
@@ -452,40 +509,40 @@ echo '1'
 # mapped 3 times or more
 # awk script above
 # then prepare output samfiles with sam-header, not for OUT0.sam
-samtools view -H ${TMP_BAM_INNER} > $basef/OUT1.sam
-samtools view -H ${TMP_BAM_INNER} > $basef/OUT2.sam
-samtools view -H ${TMP_BAM_INNER} > $basef/OUT3.sam
+			       samtools view -H ${TMP_BAM_INNER} > $basef/OUT1.sam
+			       samtools view -H ${TMP_BAM_INNER} > $basef/OUT2.sam
+			       samtools view -H ${TMP_BAM_INNER} > $basef/OUT3.sam
 # and run the awk script
-samtools view ${TMP_BAM_INNER} | \
-awk -vOUT0=$basef/OUT0.sam -vOUT1=$basef/OUT1.sam -vOUT2=$basef/OUT2.sam -vOUT3=$basef/OUT3.sam "$AWKSCRIPT"
+			       samtools view ${TMP_BAM_INNER} | \
+				       awk -vOUT0=$basef/OUT0.sam -vOUT1=$basef/OUT1.sam -vOUT2=$basef/OUT2.sam -vOUT3=$basef/OUT3.sam "$AWKSCRIPT"
 
 # unmapped reads: sort, unique, count reads only
-cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c |\
-sort -gr | gzip -  > ${UNMAPPED_INNER}
-rm -f $basef/OUT0.sam
+				       cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c |\
+					       sort -gr | gzip -  > ${UNMAPPED_INNER}
+					       rm -f $basef/OUT0.sam
 
 # filter for quality score MIN_Q
-samtools view -S -b -h -q ${MIN_Q} $basef/OUT1.sam -o $basef/tmp.bam
-CheckExit $? "samtools filter Q failed on inner reads"
-echo '3'
+					       samtools view -S -b -h -q ${MIN_Q} $basef/OUT1.sam -o $basef/tmp.bam
+					       CheckExit $? "samtools filter Q failed on inner reads"
+					       echo '3'
 # sort bam file
-mv -f $basef/tmp.bam ${TMP_BAM_INNER}
-rm -f $basef/OUT1.sam
-samtools sort ${TMP_BAM_INNER} $basef/srt
-CheckExit $? "samtools sort failed on inner reads"
-echo '4'
+					       mv -f $basef/tmp.bam ${TMP_BAM_INNER}
+					       rm -f $basef/OUT1.sam
+					       samtools sort ${TMP_BAM_INNER} $basef/srt
+					       CheckExit $? "samtools sort failed on inner reads"
+					       echo '4'
 # index bam file
-mv -f $basef/srt.bam ${TMP_BAM_INNER}
+					       mv -f $basef/srt.bam ${TMP_BAM_INNER}
 # samtools index ${TMP_BAM_INNER}
 # CheckExit $? "samtools index failed on inner reads"
-echo '5'
+					       echo '5'
 
 ## TODO
 # still need to do something with OUT2.sam and OUT3.sam 
 
-cat ${TMP_FQ_EDGE} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM_EDGE} ) 2> ${TMP_STATS_EDGE}
-CheckExit $? "bowtie2 failed on edge reads"
-echo '11'
+					       cat ${TMP_FQ_EDGE} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM_EDGE} ) 2> ${TMP_STATS_EDGE}
+					       CheckExit $? "bowtie2 failed on edge reads"
+					       echo '11'
 # extract all unmapped reads, collect read sequences, and read count.
 # Save in separate files
 # samtools view ${TMP_BAM_EDGE} | awk '$2 == 4' | cut -f 10 | sort | uniq -c |\
@@ -494,49 +551,49 @@ echo '11'
 # echo '22'
 
 # prepare OUT1.sam. OUT2.same and OUT3.sam will be appended to
-samtools view -H ${TMP_BAM_EDGE} > $basef/OUT1.sam
+					       samtools view -H ${TMP_BAM_EDGE} > $basef/OUT1.sam
 # and run the awk script
-samtools view ${TMP_BAM_EDGE} | \
-		 awk -vOUT0=$basef/OUT0.sam -vOUT1=$basef/OUT1.sam -vOUT2=$basef/OUT2.sam -vOUT3=$basef/OUT3.sam "$AWKSCRIPT"
+					       samtools view ${TMP_BAM_EDGE} | \
+						       awk -vOUT0=$basef/OUT0.sam -vOUT1=$basef/OUT1.sam -vOUT2=$basef/OUT2.sam -vOUT3=$basef/OUT3.sam "$AWKSCRIPT"
 
 # unmapped reads: sort, unique, count reads only
-		 cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c |\
-			 sort -gr | gzip -  > ${UNMAPPED_EDGE}
-			 rm -f $basef/OUT0.sam
+						       cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c |\
+							       sort -gr | gzip -  > ${UNMAPPED_EDGE}
+							       rm -f $basef/OUT0.sam
 
 # filter for quality score MIN_Q
-			 samtools view -b -h -q ${MIN_Q} ${TMP_BAM_EDGE} -o $basef/tmp.bam
-			 CheckExit $? "samtools filter Q failed on edge reads"
-			 echo '33'
+							       samtools view -b -h -q ${MIN_Q} ${TMP_BAM_EDGE} -o $basef/tmp.bam
+							       CheckExit $? "samtools filter Q failed on edge reads"
+							       echo '33'
 # sort bam file
-			 mv -f $basef/tmp.bam ${TMP_BAM_EDGE}
-			 rm -f $basef/OUT1.sam
-			 samtools sort ${TMP_BAM_EDGE} $basef/srt
-			 CheckExit $? "samtools sort failed on edge reads"
-			 echo '44'
+							       mv -f $basef/tmp.bam ${TMP_BAM_EDGE}
+							       rm -f $basef/OUT1.sam
+							       samtools sort ${TMP_BAM_EDGE} $basef/srt
+							       CheckExit $? "samtools sort failed on edge reads"
+							       echo '44'
 # index bam file
-			 mv -f $basef/srt.bam ${TMP_BAM_EDGE}
+							       mv -f $basef/srt.bam ${TMP_BAM_EDGE}
 # samtools index ${TMP_BAM_EDGE}
 # CheckExit $? "samtools index failed on edge reads"
-			 echo '55'
+							       echo '55'
 
 # compress OUT2.sam and OUT3.sam to bam
-			 samtools view -S -b $basef/OUT2.sam -o ${OUTx2_BAM}
-			 rm -f $basef/OUT2.sam
-			 samtools view -S -b $basef/OUT3.sam -o ${OUTx3_BAM}
-			 rm -f $basef/OUT3.sam
+							       samtools view -S -b $basef/OUT2.sam -o ${OUTx2_BAM}
+							       rm -f $basef/OUT2.sam
+							       samtools view -S -b $basef/OUT3.sam -o ${OUTx3_BAM}
+							       rm -f $basef/OUT3.sam
 
 # merge stat files
-			 cat ${TMP_STATS_INNER} ${TMP_STATS_EDGE} > ${BWT_STATS}
-			 OUT=$?
-			 if [ ${OUT} -ne 0 ]; then
-			 rm -f ${OUT_BAM_INNER} ${OUT_BAM_EDGE}
-			 rm -f ${OUT_BAM_EDGE}.bai ${OUT_BAM_EDGE}.bai
-			 CheckExit ${OUT} "merging stat files failed"
-			 fi
+							       cat ${TMP_STATS_INNER} ${TMP_STATS_EDGE} > ${BWT_STATS}
+							       OUT=$?
+							       if [ ${OUT} -ne 0 ]; then
+							       rm -f ${OUT_BAM_INNER} ${OUT_BAM_EDGE}
+							       rm -f ${OUT_BAM_EDGE}.bai ${OUT_BAM_EDGE}.bai
+							       CheckExit ${OUT} "merging stat files failed"
+							       fi
 # delete tmp stats files
-			 rm -f ${TMP_STATS_INNER} ${TMP_STATS_EDGE}
-			 echo '6'
+							       rm -f ${TMP_STATS_INNER} ${TMP_STATS_EDGE}
+							       echo '6'
 #####################################################
 #####################################################
 
@@ -556,85 +613,85 @@ samtools view ${TMP_BAM_EDGE} | \
 #####################################################
 # count reads after ${Q_MIN} filtering
 ######################################
-			 CNT_INNER=`samtools view -c "${TMP_BAM_INNER}"`
-			 CheckExit $? "samtools count inner after filter Q failed"
-			 echo '7'
-			 CNT_EDGE=`samtools view -c "${TMP_BAM_EDGE}"`
-			 CheckExit $? "samtools count edge after filter Q failed"
-			 echo '8'
-			 echo "inner nreads after Q_filter: ${CNT_INNER}" >> ${BWT_STATS}
-			 echo "edge nreads after Q_filter: ${CNT_EDGE}" >> ${BWT_STATS}
-			 echo '9'
-			 CNT_ALL=`expr ${CNT_INNER} + ${CNT_EDGE}`
-			 CheckExit $? "summing inner and edge reads failed"
-			 echo '10'
-			 echo "all nreads after Q_filter: ${CNT_ALL}" >> ${BWT_STATS}
+							       CNT_INNER=`samtools view -c "${TMP_BAM_INNER}"`
+							       CheckExit $? "samtools count inner after filter Q failed"
+							       echo '7'
+							       CNT_EDGE=`samtools view -c "${TMP_BAM_EDGE}"`
+							       CheckExit $? "samtools count edge after filter Q failed"
+							       echo '8'
+							       echo "inner nreads after Q_filter: ${CNT_INNER}" >> ${BWT_STATS}
+							       echo "edge nreads after Q_filter: ${CNT_EDGE}" >> ${BWT_STATS}
+							       echo '9'
+							       CNT_ALL=`expr ${CNT_INNER} + ${CNT_EDGE}`
+							       CheckExit $? "summing inner and edge reads failed"
+							       echo '10'
+							       echo "all nreads after Q_filter: ${CNT_ALL}" >> ${BWT_STATS}
 # removing duplicates from inner reads
-			 samtools rmdup -s ${TMP_BAM_INNER} $basef/tmp.bam
-			 CheckExit $? "samtools rmdup inner reads failed"
-			 echo '12'
+							       samtools rmdup -s ${TMP_BAM_INNER} $basef/tmp.bam
+							       CheckExit $? "samtools rmdup inner reads failed"
+							       echo '12'
 ######################################
 # # reads lost after rmdup
 ######################################
-			 CNT_INNER_RMDUP=`samtools view -c $basef/tmp.bam`
+							       CNT_INNER_RMDUP=`samtools view -c $basef/tmp.bam`
 # CNT=`samtools view -h "${TMP_BAM_INNER}" | \
 #      samtools view -S -h -b - -o - | \
 #      samtools rmdup -s - - | \
 #      samtools view -c -`
-			 CheckExit $? "samtools unique count inner reads failed"
-			 echo "nreads unique inner reads: ${CNT_INNER_RMDUP}" >> ${BWT_STATS}
+							       CheckExit $? "samtools unique count inner reads failed"
+							       echo "nreads unique inner reads: ${CNT_INNER_RMDUP}" >> ${BWT_STATS}
 # replace inner reads with unique reads only
-			 mv -f $basef/tmp.bam ${TMP_BAM_INNER}
-			 CheckExit $? "replacing inner reads with unique reads failed"
-			 echo '13'
+							       mv -f $basef/tmp.bam ${TMP_BAM_INNER}
+							       CheckExit $? "replacing inner reads with unique reads failed"
+							       echo '13'
 # removing duplicates from edge reads
-			 samtools rmdup -s ${TMP_BAM_EDGE} $basef/tmp.bam
-			 CheckExit $? "samtools rmdup edge reads failed"
-			 echo '14'
-			 CNT_EDGE_RMDUP=`samtools view -c $basef/tmp.bam`
+							       samtools rmdup -s ${TMP_BAM_EDGE} $basef/tmp.bam
+							       CheckExit $? "samtools rmdup edge reads failed"
+							       echo '14'
+							       CNT_EDGE_RMDUP=`samtools view -c $basef/tmp.bam`
 # CNT=`samtools view -h "${TMP_BAM_INNER}" | \
 #      samtools view -S -h -b - -o - | \
 #      samtools rmdup -s - - | \
 #      samtools view -c -`
-			 CheckExit $? "samtools unique count edge reads failed"
-			 echo "nreads unique edge inner reads: ${CNT_EDGE_RMDUP}" >> ${BWT_STATS}
+							       CheckExit $? "samtools unique count edge reads failed"
+							       echo "nreads unique edge inner reads: ${CNT_EDGE_RMDUP}" >> ${BWT_STATS}
 # don't replace edge reads with unique reads only
-			 rm -f $basef/tmp.bam
-			 echo '15'
+							       rm -f $basef/tmp.bam
+							       echo '15'
 ######################################
 # count mito reads 
 ######################################
-			 samtools index ${TMP_BAM_EDGE}
-			 CNT_EDGE_MITO=`samtools view -c ${TMP_BAM_EDGE} dmel_mitochondrion_genome`
-			 rm -f ${TMP_BAM_EDGE}.bai
-			 CheckExit $? "count mito reads from edge reads failed"
-			 echo "# mito reads from edge reads: ${CNT_EDGE_MITO}" >> ${BWT_STATS}
-			 echo '16'
-			 samtools index ${TMP_BAM_INNER}
-			 CNT_INNER_MITO=`samtools view -c ${TMP_BAM_INNER} dmel_mitochondrion_genome`
-			 rm -f ${TMP_BAM_INNER}.bai
-			 CheckExit $? "count mito reads from inner reads failed"
-			 echo "# mito reads from inner reads: ${CNT_INNER_MITO}" >> ${BWT_STATS}
-			 echo '17'
-			 samtools sort ${OUTx2_BAM} $basef/tmp
-			 mv $basef/tmp.bam ${OUTx2_BAM}
-			 samtools index ${OUTx2_BAM}
-			 CNT_2X_MITO=`samtools view -c ${OUTx2_BAM} dmel_mitochondrion_genome`
-			 rm -f ${OUTx2_BAM}.bai
-			 CheckExit $? "count mito reads from 2xmapped reads failed from ${OUTx2_BAM}"
-			 echo "# mito reads from 2xmapped reads: ${CNT_2X_MITO=}" >> ${BWT_STATS}
-			 echo '18'
-			 samtools sort ${OUTx3_BAM} $basef/tmp
-			 mv $basef/tmp.bam ${OUTx3_BAM}
-			 samtools index ${OUTx3_BAM}
-			 CNT_3X_MITO=`samtools view -c ${OUTx3_BAM} dmel_mitochondrion_genome`
-			 rm -f ${OUTx3_BAM}.bai
-			 CheckExit $? "count mito reads from 3xmapped reads failed from ${OUTx3_BAM}"
-			 echo "# mito reads from 3xmapped reads: ${CNT_3X_MITO=}" >> ${BWT_STATS}
-			 echo '19'
+							       samtools index ${TMP_BAM_EDGE}
+							       CNT_EDGE_MITO=`samtools view -c ${TMP_BAM_EDGE} dmel_mitochondrion_genome`
+							       rm -f ${TMP_BAM_EDGE}.bai
+							       CheckExit $? "count mito reads from edge reads failed"
+							       echo "# mito reads from edge reads: ${CNT_EDGE_MITO}" >> ${BWT_STATS}
+							       echo '16'
+							       samtools index ${TMP_BAM_INNER}
+							       CNT_INNER_MITO=`samtools view -c ${TMP_BAM_INNER} dmel_mitochondrion_genome`
+							       rm -f ${TMP_BAM_INNER}.bai
+							       CheckExit $? "count mito reads from inner reads failed"
+							       echo "# mito reads from inner reads: ${CNT_INNER_MITO}" >> ${BWT_STATS}
+							       echo '17'
+							       samtools sort ${OUTx2_BAM} $basef/tmp
+							       mv $basef/tmp.bam ${OUTx2_BAM}
+							       samtools index ${OUTx2_BAM}
+							       CNT_2X_MITO=`samtools view -c ${OUTx2_BAM} dmel_mitochondrion_genome`
+							       rm -f ${OUTx2_BAM}.bai
+							       CheckExit $? "count mito reads from 2xmapped reads failed from ${OUTx2_BAM}"
+							       echo "# mito reads from 2xmapped reads: ${CNT_2X_MITO=}" >> ${BWT_STATS}
+							       echo '18'
+							       samtools sort ${OUTx3_BAM} $basef/tmp
+							       mv $basef/tmp.bam ${OUTx3_BAM}
+							       samtools index ${OUTx3_BAM}
+							       CNT_3X_MITO=`samtools view -c ${OUTx3_BAM} dmel_mitochondrion_genome`
+							       rm -f ${OUTx3_BAM}.bai
+							       CheckExit $? "count mito reads from 3xmapped reads failed from ${OUTx3_BAM}"
+							       echo "# mito reads from 3xmapped reads: ${CNT_3X_MITO=}" >> ${BWT_STATS}
+							       echo '19'
 
-mv ${TMP_BAM_INNER} ${OUT_BAM_INNER}
-mv ${TMP_BAM_EDGE} ${OUT_BAM_EDGE}
+							       mv ${TMP_BAM_INNER} ${OUT_BAM_INNER}
+							       mv ${TMP_BAM_EDGE} ${OUT_BAM_EDGE}
 
 # merge temp files to final filenames
 # mv ${TMP_BAM} ${OUT_BAM}
@@ -643,21 +700,21 @@ mv ${TMP_BAM_EDGE} ${OUT_BAM_EDGE}
 # delete tmp bam files
 #		 rm -f ${TMP_BAM_INNER} ${TMP_BAM_EDGE}
 # index merged bam file
-			 samtools index ${OUT_BAM_INNER}
-			 OUT=$?
-			 if [ ${OUT} -ne 0 ]; then
-			 rm -f ${OUT_BAM_INNER}
-			 CheckExit ${OUT} "samtools index failed"
-			 fi
-samtools index ${OUT_BAM_EDGE}
-			 OUT=$?
-			 if [ ${OUT} -ne 0 ]; then
-			 rm -f ${OUT_BAM_EDGE}
-			 CheckExit ${OUT} "samtools index failed"
-			 fi
+							       samtools index ${OUT_BAM_INNER}
+							       OUT=$?
+							       if [ ${OUT} -ne 0 ]; then
+							       rm -f ${OUT_BAM_INNER}
+							       CheckExit ${OUT} "samtools index failed"
+							       fi
+							       samtools index ${OUT_BAM_EDGE}
+							       OUT=$?
+							       if [ ${OUT} -ne 0 ]; then
+							       rm -f ${OUT_BAM_EDGE}
+							       CheckExit ${OUT} "samtools index failed"
+							       fi
 
-			 rm -f ${TMP_FQ_EDGE}
-			 rm -f ${TMP_FQ_INNER}
+							       rm -f ${TMP_FQ_EDGE}
+							       rm -f ${TMP_FQ_INNER}
 
 # exit succesful
-			 exit 0
+							       exit 0
