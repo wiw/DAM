@@ -31,18 +31,20 @@
 #   130123: - added some explanatory comments
 ###############################################################################
 
-		if [ $# -lt 2 ]; then
-			echo 1>&2 Usage: align_local_fq.sh input_file.fq.gz assembly_version [model-matrix-file]
+		if [ $# -lt 3 ]; then
+			echo 1>&2 Usage: align_local_fq.sh input_file.fq.gz assembly_version [model-matrix-file] fast_output_directory
 			exit 1
-		elif [[ $# == 3 ]]; then
+		elif [[ $# == 4 ]]; then
 			IN_FQ="$1 $2"
 			fq_dir=`echo "$1" | sed -r "s/(.*?).R.{9}(\.fastq\.gz)/\1_paired\2/"`
 			paired=True
 			assbly=$3
+			FASTDIR=$4
 		else
 			IN_FQ=$1
 			fq_dir=$1
 			assbly=$2
+			FASTDIR=$3
 		fi
 
 # set some paths for executables
@@ -51,7 +53,6 @@ CUTADAPT=cutadapt
 FASTX_REVCOM=fastx_reverse_complement
 BOWTIE2_INDEXES=~/data/DAM/indexes/
 DSCR=~/data/DAM/RUN/damid_description.csv # path to description file which establishes a correspondence between the file name and its human-readable name.
-EXP=True 
 
 # echo some versioninfo to log:
 echo 'using bowtie2 version:'
@@ -68,13 +69,11 @@ echo ''
 MIN_Q=25
 #adaptor sequences used in DamID-seq
 ADPTR_SHORT_5="GGTCGCGGCCGAG"
-ADPTR_LONG_5="CTAATACGACTCACTATAGGGCAGCGTGGTCGCGGCCGAG"
 #adaptor sequences used by Illumina
 ILLUMINA_5="GCTCTTCCGATCT"
 #make reverse complement of adapter sequences 
 #(${FASTX_REVCOM} expects fasta input, "awk 'NR > 1'" means print everything beyond line 1)
 ADPTR_SHORT_3=`echo -e ">\n${ADPTR_SHORT_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
-ADPTR_LONG_3=`echo -e ">\n${ADPTR_LONG_5}" | ${FASTX_REVCOM} | awk 'NR > 1'`
 ILLUMINA_3=`echo -e ">\n${ILLUMINA_5}" | ${FASTX_REVCOM} | awk 'NR > 1'` #AGATCGGAAGAGC
 CSTAT="cutadapt_statistics.csv"
 
@@ -83,10 +82,10 @@ if [ ! -f ${CSTAT} ]; then
 echo "Data.set;fastq.file;Total.number.of.reads.obtained;Without.GATCs.original.length;With.edge.GATCs;Cutadapt.Trash;Sum;Sum-Total.number.of.reads.obtained;Without.GATCs.original.length.Percentage;With.edge.GATCs.Percentage;Cutadapt.Trash.Percentage" > ${CSTAT}
 fi
 
-basef=${fq_dir%.fastq.gz}
-stats=${fq_dir%.fastq.gz}/stats
-len9=${fq_dir%.fastq.gz}/len9 # folder for cuted reads 
-olen=${fq_dir%.fastq.gz}/orig_len # folder for uncuted reads
+basef=${FASTDIR}/${fq_dir%.fastq.gz}
+stats=${FASTDIR}/${fq_dir%.fastq.gz}/stats
+len9=${FASTDIR}/${fq_dir%.fastq.gz}/len9 # folder for cuted reads 
+olen=${FASTDIR}/${fq_dir%.fastq.gz}/orig_len # folder for uncuted reads
 tmpf="$len9 $olen"
 
 # make folder defined on last step
@@ -206,6 +205,8 @@ echo "
 </div>
 " >> $basef/${fq_stat_name}_report.html
 
+
+
 # Cut adapters from reads
 for fq_base in ${IN_FQ}; do	
 fq_human=`grep -w $fq_base $DSCR | sed "s/[a-zA-Z0-9_-.]*$//;s/	//"` # human-readable name in variable, get by parse $DSCR
@@ -280,7 +281,6 @@ cutadapt -g "GATC" -a "GATC" -O 4 -m 9 --no-trim --untrimmed-output $basef/out_w
 # Sort reads in untrimmed reads by presence GATC's. Process files with reads without adapters - am also looking for GATC fragments. Nothing is cut off. Reads with fragments are sent to a file untrim_out_gatcs_orig_len.fastq, without going into the file fragments TMP_FQ_INNER (untrim_out_wo_gatcs_orig_len.fastq)
 cutadapt -g "GATC" -a "GATC" -O 4 --no-trim --untrimmed-output ${TMP_FQ_INNER} $basef/untrim_out.fastq -o $basef/untrim_out_gatcs_orig_len.fastq > $stats/clip_orig_len_${fq_base%.fastq.gz}.stats
 
-
 #############################
 ###  Variable for report  ###
 #############################
@@ -322,8 +322,10 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 				fi
 			if (( $count == 1 )); then # Search and cut only 12 base adapters
 				cutadapt -g "^${adptr5}" -a "${adptr3}$" -O ${#adptr5} -e 0.01 --untrimmed-output $folder/inner$((13-${count}))-gatcs.fastq $sourcef -o $folder/output$((13-${count}))-gatcs.fastq > $stats/clip_${ins}_gatcs$((13-${count})).stats
+
 			elif (( ($count > 1) && ($count < 12) )); then # Search and cut adapters the length of which exist between 2-12 bases
 				cutadapt -g "^${adptr5}" -a "${adptr3}$" -O ${#adptr5} -e 0.01 --untrimmed-output $folder/inner$((13-${count}))-gatcs.fastq $folder/inner$((14-${count}))-gatcs.fastq -o $folder/output$((13-${count}))-gatcs.fastq > $stats/clip_${ins}_gatcs$((13-${count})).stats
+
 			elif (( $count == 12 )); then
 				atom="5 3"
 				for num in $atom; do
@@ -373,8 +375,6 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 			s3_input_untrim_reads=`grep "Processed reads" $stats/clip_orig_len_gatcs$((13-${count})).stats | sed 's/^[a-zA-Z ^t:]*//'`
 		fi
 
-		
-
 		s3_input_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
 		s3_match_trim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_match_trim_reads; (b/a)*100" | sed 's/[0].$//'`%
 		s3_input_untrim_reads_pct=`bc <<< "scale=4; a=$s0_reads; b=$s3_input_untrim_reads; (b/a)*100" | sed 's/[0].$//'`%
@@ -392,7 +392,6 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 
 # Remove reads with inner GATC's
 	cat $basef/interim_gatcs_${fq_base}.fastq | perl -e 'while($h=<>){$s=<>;$t=<>.<>; if($s!~/.+GATC.+/){print $h.$s.$t}}' > ${TMP_FQ_EDGE}
-
 
 #############################
 ###  Variable for report  ###
@@ -498,12 +497,11 @@ s2_untrim=$(($s1_untrim-$s2_untrim_gatc))
 </div>
 </div>
 <p>&nbsp;</p>" >> ${basef}/${fq_stat_name}_report.html
-done
-
 # remove intermediate files
-# rm -R $len9 $olen $stats $basef/out*.fastq $basef/untrim_out.fastq $basef/untrim_out_gatcs_orig_len.fastq $basef/interim_gatcs_${fq_base}.fastq
+rm -R $len9/* $olen/* $stats/* $basef/out*.fastq $basef/untrim_*.fastq $basef/interim_gatcs_${fq_base}.fastq
 #mv $basef $OUT # If folder $OUT is defined then to move output data from $DIR to $OUT
-
+done
+rm -R $len9 $olen $stats
 PairedStat ()
 {
 	TR=`grep "Total Reads" $1 | sed -r "s/.*[[:space:]]([0-9]+)/\1/"`
@@ -527,27 +525,23 @@ PairedStat ()
 </div>
 <p>&nbsp;</p>" >> ${basef}/${fq_stat_name}_report.html
 }
-exit 1
 if [ "$paired" == "True" ]; then
 	echo "
 	<div class=\"page-header\">
 	<h1>Paired match statistic <small>for ${header}</small></h1>
 	</div>" >> ${basef}/${fq_stat_name}_report.html
 
-	paired_sequence_match.py -i " " -v ${basef}/tmp_fq_inner.F.fastq ${basef}/tmp_fq_inner.R.fastq -p ${basef}/inner_F.fastq -p ${basef}/inner_R.fastq -s ${basef}/single_inner_reads.fastq 2> ${basef}/paired.stat
+	python /usr/local/bin/paired_sequence_match.py -i " " -v --index-in-memory ${basef}/tmp_fq_inner.F.fastq ${basef}/tmp_fq_inner.R.fastq -p ${basef}/inner_F.fastq -p ${basef}/inner_R.fastq -s ${basef}/single_inner_reads.fastq > ${basef}/paired.stat
 		PairedStat ${basef}/paired.stat "inner"
 
-	paired_sequence_match.py -i " " -v ${basef}/tmp_fq_edge.F.fastq ${basef}/tmp_fq_edge.R.fastq -p ${basef}/tmp_paired_edge_F.fastq -p ${basef}/tmp_paired_edge_R.fastq -s ${basef}/single_edge_reads.fastq 2> ${basef}/paired.stat
+	python /usr/local/bin/paired_sequence_match.py -i " " -v --index-in-memory ${basef}/tmp_fq_edge.F.fastq ${basef}/tmp_fq_edge.R.fastq -p ${basef}/tmp_paired_edge_F.fastq -p ${basef}/tmp_paired_edge_R.fastq -s ${basef}/single_edge_reads.fastq > ${basef}/paired.stat
 		PairedStat ${basef}/paired.stat  "edge"
 
-	paired_sequence_match.py -i " " -v ${basef}/single_edge_reads.fastq ${basef}/single_inner_reads.fastq -p ${basef}/paired_s.e.i_F.fastq -p ${basef}/paired_s.e.i_R.fastq 2> ${basef}/paired.stat
+	python /usr/local/bin/paired_sequence_match.py -i " " -v --index-in-memory ${basef}/single_edge_reads.fastq ${basef}/single_inner_reads.fastq -p ${basef}/tmp_paired_F.fastq -p ${basef}/tmp_paired_R.fastq -s ${basef}/single_unpaired.fastq > ${basef}/paired.stat
 		PairedStat ${basef}/paired.stat "unmatched"
 
-	cat ${basef}/tmp_paired_edge_F.fastq ${basef}/tmp_paired_s.e.i_F.fastq > ${basef}/edge_F.fastq
-	cat ${basef}/tmp_paired_edge_R.fastq ${basef}/tmp_paired_s.e.i_R.fastq > ${basef}/edge_R.fastq
-
-	# rm -R ${basef}/paired.stat ${basef}/tmp*.fastq ${basef}/single*.fastq
-
+	cat ${basef}/tmp_paired_edge_F.fastq ${basef}/tmp_paired_F.fastq > ${basef}/edge_F.fastq
+	cat ${basef}/tmp_paired_edge_R.fastq ${basef}/tmp_paired_R.fastq > ${basef}/edge_R.fastq
 fi
 
 
@@ -569,35 +563,66 @@ for FQ in ${FQ_VECTOR}; do
 	#Get number of CPU Cores
 	CORE=`lscpu | grep 'CPU(s):' | sed -n '1p' | rev | cut -c 1`
 	#Run Bowtie
-	BOWTIE_PAR="-k 3 -p ${CORE} -t --phred33 --local -x ${BOWTIE2_INDEXES}${ASSEMBLY}"
+	BOWTIE_PAR="-p ${CORE} -t --phred33 --local -x ${BOWTIE2_INDEXES}${ASSEMBLY}"
+	SAMTOOLS_PAR="-bhq"
 	# Set TMP_BAM and STAT files
 	if [ "$FQ" == "${TMP_FQ_INNER}" ]; then
 		TMP_BAM="${TMP_BAM_INNER}"
 		STAT="${TMP_STATS_INNER}"
 		UNMAP="${UNMAPPED_INNER}"
-		SAMTOOLS_PAR="-S -b -h -q"
 		label="inner"
 	else
 		TMP_BAM="${TMP_BAM_EDGE}"
 		STAT="${TMP_STATS_EDGE}"
 		UNMAP="${UNMAPPED_EDGE}"
-		SAMTOOLS_PAR="-b -h -q"
 		label="edge"
 	fi
 	# SET FQ source files if paired alingment
 	if [ "$paired" == "True" ]; then
-		$FQ="-1 ${basef}/${label}_F.fastq -2 ${basef}/${label}_R.fastq"
-		if [ "$EXP" == "False" ]; then
-			(${BOWTIE2} ${BOWTIE_PAR} ${FQ} | samtools view -bS - -o ${TMP_BAM}) 2> ${STAT}
-		else
-			(${BOWTIE2} ${BOWTIE_PAR} --no-discordant --no-mixed ${FQ} | samtools view -bS - -o ${TMP_BAM}) 2> ${STAT}
-	fi
+		FQ_PAIR="-1 ${basef}/${label}_F.fastq -2 ${basef}/${label}_R.fastq"
+		(${BOWTIE2} ${BOWTIE_PAR} --no-discordant --no-mixed ${FQ_PAIR} | grep -v "XS:i" | samtools view -bS - -o ${TMP_BAM}) 2> ${STAT}
+		SOURCE_Q="${TMP_BAM}"
+		CheckExit $? "bowtie2 failed on inner reads"
 	# End of option
 	else
-		cat ${FQ} | (${BOWTIE2} ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM}) 2> ${STAT}
-	fi
+		cat ${FQ} | (${BOWTIE2} -k 3 ${BOWTIE_PAR} -U - | samtools view -bS - -o ${TMP_BAM}) 2> ${STAT}
+		CheckExit $? "bowtie2 failed on inner reads"
+			#################################################################################
+			# split bamfile in unmapped, uniquely mapped reads, reads mapped twice, and reads
+			# mapped 3 times or more
+			# awk script above
+			# then prepare output samfiles with sam-header, not for OUT0.sam
+			if [ "$FQ" == "${TMP_FQ_EDGE}" ]; then
+				samtools view -H ${TMP_BAM} > $basef/OUT1.sam
+				SOURCE_Q="${TMP_BAM}"
+			else
+				samtools view -H ${TMP_BAM} > $basef/OUT1.sam
+				samtools view -H ${TMP_BAM} > $basef/OUT2.sam
+				samtools view -H ${TMP_BAM} > $basef/OUT3.sam
+				SOURCE_Q="$basef/OUT1.sam"
+				SAMTOOLS_PAR="-Sbhq"
+			fi
 
-	CheckExit $? "bowtie2 failed on inner reads"
+			# and run the awk script
+			samtools view ${TMP_BAM} | awk -vOUT0=$basef/OUT0.sam -vOUT1=$basef/OUT1.sam -vOUT2=$basef/OUT2.sam -vOUT3=$basef/OUT3.sam "$AWKSCRIPT"
+
+			# unmapped reads: sort, unique, count reads only
+			cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c | sort -gr | gzip -c  > ${UNMAP}
+			rm -f $basef/OUT0.sam
+				
+	fi
+# filter for quality score MIN_Q
+	samtools view ${SAMTOOLS_PAR} ${MIN_Q} ${SOURCE_Q} -o $basef/tmp.bam
+	CheckExit $? "samtools filter Q failed on reads from ${FQ}"
+
+	# sort bam file
+	mv -f $basef/tmp.bam ${TMP_BAM}
+	if [ -e $basef/OUT1.sam ]; then rm -f $basef/OUT1.sam; fi
+	samtools sort -n -@ $CORE ${TMP_BAM} $basef/srt
+	CheckExit $? "samtools sort failed on reads from ${FQ}"
+
+	# index bam file
+	mv -f $basef/srt.bam ${TMP_BAM}
 
 	# Write statistics
 	unpaired=`grep "were unpaired" ${STAT} | sed -r "s/[[:space:]]+([0-9]+)(.+[%\)]).*/\1\2/"`
@@ -635,57 +660,23 @@ for FQ in ${FQ_VECTOR}; do
 </div>
 </div>
 <p>&nbsp;</p>" >> ${basef}/${fq_stat_name}_report.html
-
-	#################################################################################
-	# split bamfile in unmapped, uniquely mapped reads, reads mapped twice, and reads
-	# mapped 3 times or more
-	# awk script above
-	# then prepare output samfiles with sam-header, not for OUT0.sam
-	if [ "$FQ" == "${TMP_FQ_EDGE}" ]; then
-		samtools view -H ${TMP_BAM} > $basef/OUT1.sam
-		SOURCE_Q="${TMP_BAM}"
-	else
-		samtools view -H ${TMP_BAM} > $basef/OUT1.sam
-		samtools view -H ${TMP_BAM} > $basef/OUT2.sam
-		samtools view -H ${TMP_BAM} > $basef/OUT3.sam
-		SOURCE_Q="$basef/OUT1.sam"
-	fi
-
-	# and run the awk script
-	samtools view ${TMP_BAM} | awk -vOUT0=$basef/OUT0.sam -vOUT1=$basef/OUT1.sam -vOUT2=$basef/OUT2.sam -vOUT3=$basef/OUT3.sam "$AWKSCRIPT"
-
-	# unmapped reads: sort, unique, count reads only
-	cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c | sort -gr | gzip -  > ${UNMAP}
-	rm -f $basef/OUT0.sam
-
-	# filter for quality score MIN_Q
-	samtools view ${SAMTOOLS_PAR} ${MIN_Q} ${SOURCE_Q} -o $basef/tmp.bam
-	CheckExit $? "samtools filter Q failed on reads from ${FQ}"
-
-	# sort bam file
-	mv -f $basef/tmp.bam ${TMP_BAM}
-	rm -f $basef/OUT1.sam
-	samtools sort ${TMP_BAM} $basef/srt
-	CheckExit $? "samtools sort failed on reads from ${FQ}"
-
-	# index bam file
-	mv -f $basef/srt.bam ${TMP_BAM}
-
 done
 
-# compress OUT2.sam and OUT3.sam to bam
-samtools view -S -b $basef/OUT2.sam -o ${OUTx2_BAM}
-rm -f $basef/OUT2.sam
-samtools view -S -b $basef/OUT3.sam -o ${OUTx3_BAM}
-rm -f $basef/OUT3.sam
+if [ "$paired" != "True" ]; then
+	# compress OUT2.sam and OUT3.sam to bam
+	samtools view -S -b $basef/OUT2.sam -o ${OUTx2_BAM}
+	rm -f $basef/OUT2.sam
+	samtools view -S -b $basef/OUT3.sam -o ${OUTx3_BAM}
+	rm -f $basef/OUT3.sam
+fi
 
 # merge stat files
 cat ${TMP_STATS_INNER} ${TMP_STATS_EDGE} > ${BWT_STATS}
 OUT=$?
 if [ ${OUT} -ne 0 ]; then
-rm -f ${OUT_BAM_INNER} ${OUT_BAM_EDGE}
-rm -f ${OUT_BAM_EDGE}.bai ${OUT_BAM_EDGE}.bai
-CheckExit ${OUT} "merging stat files failed"
+	rm -f ${OUT_BAM_INNER} ${OUT_BAM_EDGE}
+	rm -f ${OUT_BAM_EDGE}.bai ${OUT_BAM_EDGE}.bai
+	CheckExit ${OUT} "merging stat files failed"
 fi
 # delete tmp stats files
 rm -f ${TMP_STATS_INNER} ${TMP_STATS_EDGE}
@@ -724,7 +715,7 @@ CheckExit $? "summing inner and edge reads failed"
 echo '10'
 echo "all nreads after Q_filter: ${CNT_ALL}" >> ${BWT_STATS}
 # removing duplicates from inner reads
-samtools rmdup -s ${TMP_BAM_INNER} $basef/tmp.bam
+samtools rmdup -S ${TMP_BAM_INNER} $basef/tmp.bam
 CheckExit $? "samtools rmdup inner reads failed"
 echo '12'
 ######################################
@@ -766,22 +757,24 @@ rm -f ${TMP_BAM_INNER}.bai
 CheckExit $? "count mito reads from inner reads failed"
 echo "# mito reads from inner reads: ${CNT_INNER_MITO}" >> ${BWT_STATS}
 echo '17'
-samtools sort ${OUTx2_BAM} $basef/tmp
-mv $basef/tmp.bam ${OUTx2_BAM}
-samtools index ${OUTx2_BAM}
-CNT_2X_MITO=`samtools view -c ${OUTx2_BAM} dmel_mitochondrion_genome`
-rm -f ${OUTx2_BAM}.bai
-CheckExit $? "count mito reads from 2xmapped reads failed from ${OUTx2_BAM}"
-echo "# mito reads from 2xmapped reads: ${CNT_2X_MITO=}" >> ${BWT_STATS}
-echo '18'
-samtools sort ${OUTx3_BAM} $basef/tmp
-mv $basef/tmp.bam ${OUTx3_BAM}
-samtools index ${OUTx3_BAM}
-CNT_3X_MITO=`samtools view -c ${OUTx3_BAM} dmel_mitochondrion_genome`
-rm -f ${OUTx3_BAM}.bai
-CheckExit $? "count mito reads from 3xmapped reads failed from ${OUTx3_BAM}"
-echo "# mito reads from 3xmapped reads: ${CNT_3X_MITO=}" >> ${BWT_STATS}
-echo '19'
+if [ "$paired" != "True" ]; then
+	samtools sort ${OUTx2_BAM} $basef/tmp
+	mv $basef/tmp.bam ${OUTx2_BAM}
+	samtools index ${OUTx2_BAM}
+	CNT_2X_MITO=`samtools view -c ${OUTx2_BAM} dmel_mitochondrion_genome`
+	rm -f ${OUTx2_BAM}.bai
+	CheckExit $? "count mito reads from 2xmapped reads failed from ${OUTx2_BAM}"
+	echo "# mito reads from 2xmapped reads: ${CNT_2X_MITO=}" >> ${BWT_STATS}
+	echo '18'
+	samtools sort ${OUTx3_BAM} $basef/tmp
+	mv $basef/tmp.bam ${OUTx3_BAM}
+	samtools index ${OUTx3_BAM}
+	CNT_3X_MITO=`samtools view -c ${OUTx3_BAM} dmel_mitochondrion_genome`
+	rm -f ${OUTx3_BAM}.bai
+	CheckExit $? "count mito reads from 3xmapped reads failed from ${OUTx3_BAM}"
+	echo "# mito reads from 3xmapped reads: ${CNT_3X_MITO=}" >> ${BWT_STATS}
+	echo '19'
+fi
 
 mv ${TMP_BAM_INNER} ${OUT_BAM_INNER}
 mv ${TMP_BAM_EDGE} ${OUT_BAM_EDGE}
@@ -793,21 +786,17 @@ mv ${TMP_BAM_EDGE} ${OUT_BAM_EDGE}
 # delete tmp bam files
 #		 rm -f ${TMP_BAM_INNER} ${TMP_BAM_EDGE}
 # index merged bam file
-samtools index ${OUT_BAM_INNER}
-OUT=$?
-if [ ${OUT} -ne 0 ]; then
-rm -f ${OUT_BAM_INNER}
-CheckExit ${OUT} "samtools index failed"
-fi
-samtools index ${OUT_BAM_EDGE}
-OUT=$?
-if [ ${OUT} -ne 0 ]; then
-rm -f ${OUT_BAM_EDGE}
-CheckExit ${OUT} "samtools index failed"
-fi
+OUT_BAM_VECTOR="${OUT_BAM_INNER} ${OUT_BAM_EDGE}"
+for BAM in $OUT_BAM_VECTOR; do
+	samtools index ${BAM}
+	OUT=$?
+	if [ ${OUT} -ne 0 ]; then
+	rm -f ${BAM}
+	CheckExit ${OUT} "samtools index failed"
+	fi
+done
 
-rm -f ${TMP_FQ_EDGE}
-rm -f ${TMP_FQ_INNER}
+rm -R -f ${basef}/paired.stat ${basef}/tmp*.fastq ${basef}/single*.fastq ${TMP_FQ_INNER} ${TMP_FQ_EDGE} ${basef}/edge_R.fastq ${basef}/edge_F.fastq ${basef}/inner_R.fastq ${basef}/inner_F.fastq
 
 echo "<hr>
 <footer><b><p>&copy; Laboratory of cell division IMCB SB RAS, Novosibirsk, 2014-2015</p></b></footer>

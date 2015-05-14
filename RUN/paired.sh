@@ -1,6 +1,6 @@
 #!/bin/bash
 paired=True
-basef=/home/anton/backup/tpoutput/bowtie/exp15_04_13/alignedReads_tmp/DAM-1.FCC4JPEACXX_L6_paired/paired
+basef=/home/anton/backup/tpoutput/bowtie/exp15_04_13/alignedReads_tmp/DAM-1.FCC4JPEACXX_L6_paired
 header="DAM1 and DAM2"
 PairedStat ()
 {
@@ -23,28 +23,25 @@ PairedStat ()
 <p align=\"center\"><script>document.write(number_format(${SR}, 0, '.', ' '))</script></p>
 </div>
 </div>
-<p>&nbsp;</p>" >> ${basef}/fq_stat_name_report.html
+<p>&nbsp;</p>" >> ${basef}/SG.DAM.wt_paired.1_report.html
 }
 if [ "$paired" == "True" ]; then
 	echo "
 	<div class=\"page-header\">
 	<h1>Paired match statistic <small>for ${header}</small></h1>
-	</div>" >> ${basef}/fq_stat_name_report.html
+	</div>" >> ${basef}/SG.DAM.wt_paired.1_report.html
 
-	python /usr/local/bin/paired_sequence_match.py -i " " -v ${basef}/tmp_fq_inner.F.fastq ${basef}/tmp_fq_inner.R.fastq -p ${basef}/inner_F.fastq -p ${basef}/inner_R.fastq -s ${basef}/single_inner_reads.fastq > ${basef}/paired.stat
+	python /usr/local/bin/paired_sequence_match.py -i " " -v --index-in-memory ${basef}/tmp_fq_inner.F.fastq ${basef}/tmp_fq_inner.R.fastq -p ${basef}/inner_F.fastq -p ${basef}/inner_R.fastq -s ${basef}/single_inner_reads.fastq > ${basef}/paired.stat
 		PairedStat ${basef}/paired.stat "inner"
 
-	python /usr/local/bin/paired_sequence_match.py -i " " -v ${basef}/tmp_fq_edge.F.fastq ${basef}/tmp_fq_edge.R.fastq -p ${basef}/tmp_paired_edge_F.fastq -p ${basef}/tmp_paired_edge_R.fastq -s single_edge_reads.fastq > ${basef}/paired.stat
-
-
-	-i " " -v ${basef}/tmp_fq_edge.F.fastq ${basef}/tmp_fq_edge.R.fastq -p ${basef}/tmp_paired_edge_F.fastq -p ${basef}/tmp_paired_edge_R.fastq -s ${basef}/single_edge_reads.fastq > ${basef}/paired.stat
+	python /usr/local/bin/paired_sequence_match.py -i " " -v --index-in-memory ${basef}/tmp_fq_edge.F.fastq ${basef}/tmp_fq_edge.R.fastq -p ${basef}/tmp_paired_edge_F.fastq -p ${basef}/tmp_paired_edge_R.fastq -s ${basef}/single_edge_reads.fastq > ${basef}/paired.stat
 		PairedStat ${basef}/paired.stat  "edge"
 
-	python /usr/local/bin/paired_sequence_match.py -i " " -v ${basef}/single_edge_reads.fastq ${basef}/single_inner_reads.fastq -p ${basef}/paired_s.e.i_F.fastq -p ${basef}/paired_s.e.i_R.fastq > ${basef}/paired.stat
+	python /usr/local/bin/paired_sequence_match.py -i " " -v --index-in-memory ${basef}/single_edge_reads.fastq ${basef}/single_inner_reads.fastq -p ${basef}/tmp_paired_F.fastq -p ${basef}/tmp_paired_R.fastq -s single_unpaired.fastq > ${basef}/paired.stat
 		PairedStat ${basef}/paired.stat "unmatched"
 
-	cat ${basef}/tmp_paired_edge_F.fastq ${basef}/tmp_paired_s.e.i_F.fastq > ${basef}/edge_F.fastq
-	cat ${basef}/tmp_paired_edge_R.fastq ${basef}/tmp_paired_s.e.i_R.fastq > ${basef}/edge_R.fastq
+	cat ${basef}/tmp_paired_edge_F.fastq ${basef}/tmp_paired_F.fastq > ${basef}/edge_F.fastq
+	cat ${basef}/tmp_paired_edge_R.fastq ${basef}/tmp_paired_R.fastq > ${basef}/edge_R.fastq
 
 	# rm -R ${basef}/paired.stat ${basef}/tmp*.fastq ${basef}/single*.fastq
 
