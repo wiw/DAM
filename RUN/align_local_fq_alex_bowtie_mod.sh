@@ -582,6 +582,8 @@ for FQ in ${FQ_VECTOR}; do
 		FQ_PAIR="-1 ${basef}/${label}_F.fastq -2 ${basef}/${label}_R.fastq"
 		(${BOWTIE2} ${BOWTIE_PAR} --no-discordant --no-mixed ${FQ_PAIR} | grep -v "XS:i" | samtools view -bS - -o ${TMP_BAM}) 2> ${STAT}
 		SOURCE_Q="${TMP_BAM}"
+		CONC="concordantly "
+		prefix=""
 		CheckExit $? "bowtie2 failed on inner reads"
 	# End of option
 	else
@@ -609,6 +611,8 @@ for FQ in ${FQ_VECTOR}; do
 			# unmapped reads: sort, unique, count reads only
 			cat $basef/OUT0.sam | cut -f 10 | sort | uniq -c | sort -gr | gzip -c  > ${UNMAP}
 			rm -f $basef/OUT0.sam
+			CONC=""
+			prefix="un"
 				
 	fi
 # filter for quality score MIN_Q
@@ -625,7 +629,7 @@ for FQ in ${FQ_VECTOR}; do
 	mv -f $basef/srt.bam ${TMP_BAM}
 
 	# Write statistics
-	unpaired=`grep "were unpaired" ${STAT} | sed -r "s/[[:space:]]+([0-9]+)(.+[%\)]).*/\1\2/"`
+	total_reads=`grep "were ${prefix}paired" ${STAT} | sed -r "s/[[:space:]]+([0-9]+)(.+[%\)]).*/\1\2/"`
 	zero_times=`grep "0 times" ${STAT} | sed -r "s/[[:space:]]+([0-9]+)(.+[%\)]).*/\1\2/"`
 	one_times=`grep "exactly 1 time" ${STAT} | sed -r "s/[[:space:]]+([0-9]+)(.+[%\)]).*/\1\2/"`
 	many_times=`grep ">1 times" ${STAT} | sed -r "s/[[:space:]]+([0-9]+)(.+[%\)]).*/\1\2/"`
@@ -635,21 +639,22 @@ for FQ in ${FQ_VECTOR}; do
 <div class=\"row\"> 
 <div class=\"alert\">Bowtie alingning on ${label} reads</div>
 <div class=\"span12\"> 
-<h2 align=\"center\">I'm not found pair for ${unpaired} reads</h2> 
+<h2 align=\"center\">I handled ${total_reads} reads</h2>
+<p align=\"center\">Of them:</p>
 </div>
 </div>
 <p>&nbsp;</p>
 <div class=\"row\">
 <div class=\"span4\">
-<h4 align=\"center\">Alignment 0 times</h4>
+<h4 align=\"center\">aligned ${CONC}zero times</h4>
 <p align=\"center\">${zero_times}</p>
 </div>
 <div class=\"span4\">
-<h4 align=\"center\">Alignment one times</h4>
+<h4 align=\"center\">aligned ${CONC}one time</h4>
 <p align=\"center\">${one_times}</p>
 </div>
 <div class=\"span4\">
-<h4 align=\"center\">Alignment many times</h4>
+<h4 align=\"center\">aligned ${CONC}more then one time</h4>
 <p align=\"center\">${many_times}</p>
 </div>
 </div>
