@@ -36,6 +36,7 @@
 
 # gff file with GATC genomic positions
 GATC_GFF="/home/anton/data/DAM/COR/DmelGATCfragments-r5_AI120515.gff"
+STAT_R="/home/anton/data/DAM/RUN/stat.R"
 
 # log some bookkeeping
 echo ""
@@ -85,15 +86,12 @@ S_WIG_OUT=$(basename "${SAM_IN%.bam}_GATCcounts_sparse.wig")
 # -; input from stdin
 # ${GATC_GFF}; the gff file containing the features to which to map
 if [ "$paired" == "True" ]; then
-  mode="intersection-strict"
   CORE=`lscpu | grep 'CPU(s):' | sed -n '1p' | rev | cut -c 1`
   samtools sort -n -@ $CORE "${SAM_IN}" bam_sorted
   mv -f bam_sorted.bam "${SAM_IN}"
-else
-  mode="union"
 fi
 
-samtools view -h "${SAM_IN}" | htseq-count -i ID -m $mode -s no -q -o out.sam - "${GATC_GFF}" | gzip -c > "${COUNTS_OUT}"
+samtools view -h "${SAM_IN}" | htseq-count -i ID -m intersection-strict -s no -q -o out.sam - "${GATC_GFF}" | gzip -c > "${COUNTS_OUT}"
 if [ $? -ne 0 ] ; then
   echo "HTSeq-count failed on input file ${SAM_IN}"
   exit 1
@@ -213,5 +211,6 @@ NOW=$(date +%y%m%d%H%M)
 echo "${RSCRIPT}" | R --vanilla > "reads2GATC_Rscript_${NOW}.Rout"
 done
 
-
+# Count correlations between edge and inner replicates
+Rscript --vanilla $STAT_R >> "reads2GATC_Rscript_${NOW}.Rout"
 exit 0
