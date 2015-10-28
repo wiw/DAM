@@ -220,10 +220,10 @@ mkdir "${OUTPUT_DIR}/alignedReads"
 FASTQ_ARR=( $FASTQ_FILES )
 TOTAL=$(echo ${#FASTQ_ARR[@]})
 CORE=$(lscpu | grep 'CPU(s):' | sed -n '1p' | rev | cut -c 1)
-for (( i=1; i<$TOTAL; i++ )); do
+PROCESS=$((CORE/2))
+for (( i=0; i<$TOTAL; i++ )); do
 	(
-	pos=$((i-1))
-	fq=$(echo ${FASTQ_ARR[$pos]})
+	fq=$(echo ${FASTQ_ARR[$i]})
 	fq_local=`basename ${fq}`
 	fq_base=${fq_local%.fastq.gz}
 	fq_human=`grep -w $fq_local $DSCR | sed -r "s/[a-zA-Z0-9_-.]*$//;s/\t//"` # human-readable name in variable, get by parse $DSCR
@@ -247,7 +247,7 @@ for (( i=1; i<$TOTAL; i++ )); do
 	fi
 	#rm -f ${fq_local}
 ) &
-if (( i % CORE == 0 )); then wait; fi 
+if (( (i != 0) && (i % PROCESS == 0) )); then wait; fi 
 done
 wait
 

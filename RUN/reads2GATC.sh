@@ -40,7 +40,7 @@ SAM_IN="`cd \"$D\" 2>/dev/null && pwd || echo \"$D\"`/$B"
 # directory path of the projects dir
 PROJECT_BASE="`cd \"${CODEDIR}/..\" 2>/dev/null && pwd || echo \"${CODEDIR}/..\"`"
 # gff file with GATC genomic positions
-GATC_GFF="${PROJECT_BASE}/COR/DmelGATCfragments-r5_LP120507.gff"
+GATC_GFF="${PROJECT_BASE}/COR/DmelGATCfragments-r5_AI120515.gff"
 
 # log some bookkeeping
 echo ""
@@ -94,7 +94,7 @@ S_WIG_OUT=`basename "${SAM_IN%.bam}_GATCcounts_sparse.wig"`
 # -; input from stdin
 # ${GATC_GFF}; the gff file containing the features to which to map
 samtools view -h "${SAM_IN}" | \
-  htseq-count -i ID -s no -o out.sam - ${GATC_GFF} | \
+  htseq-count -i ID -m intersection-strict -s no -q -o out.sam - ${GATC_GFF} | \
   gzip -c > ${COUNTS_OUT}
 if [ $? -ne 0 ] ; then
   echo "HTSeq-count failed on input file ${SAM_IN}"
